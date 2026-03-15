@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medicación Convenida – Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg: #f4f1eb;
+  --surface: #ffffff;
+  --surface2: #edeae2;
+  --ink: #1a1714;
+  --ink-muted: #6b6560;
+  --accent: #c4441c;
+  --accent-light: #f5e8e3;
+  --border: #d9d4cb;
+  --os-1: #1a4a6b; --os-1l: #e3edf5;
+  --os-2: #2d6a3f; --os-2l: #e3f0e8;
+  --os-3: #6b1a4a; --os-3l: #f0e3ed;
+  --os-4: #5a3a00; --os-4l: #f5ede0;
+  --os-5: #003d5a; --os-5l: #e0f0f7;
+  --os-6: #4a004a; --os-6l: #f5e0f5;
+  --os-7: #1a3a00; --os-7l: #e8f5e0;
+  --os-8: #3a2000; --os-8l: #f7f0e0;
+  --os-9: #00334a; --os-9l: #e0eef5;
+  --os-10: #1a0048; --os-10l: #ede0f7;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+header {
+  background: var(--ink); padding: 24px 40px;
+  display: flex; align-items: flex-end; gap: 20px;
+  border-bottom: 3px solid var(--accent);
+}
+header h1 { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--bg); line-height: 1; }
+header h1 span { color: var(--accent); font-style: italic; }
+.header-meta { font-family: 'DM Mono', monospace; font-size: 11px; color: #888; letter-spacing: 0.05em; padding-bottom: 2px; }
+
+.filters-bar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 18px 40px; display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;
+}
+.filter-group { display: flex; flex-direction: column; gap: 5px; }
+.filter-group label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); font-weight: 500; }
+.filter-group select, .filter-group input {
+  font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 8px 12px;
+  border: 1.5px solid var(--border); border-radius: 6px; background: var(--bg);
+  color: var(--ink); cursor: pointer; outline: none; transition: border-color 0.15s; min-width: 200px;
+}
+.filter-group select:focus, .filter-group input:focus { border-color: var(--accent); }
+.btn-clear {
+  font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.05em;
+  padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 6px;
+  background: transparent; color: var(--ink-muted); cursor: pointer; transition: all 0.15s; align-self: flex-end;
+}
+.btn-clear:hover { border-color: var(--accent); color: var(--accent); }
+
+.stats-bar { padding: 12px 40px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.stat-card {
+  display: flex; align-items: baseline; gap: 7px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 7px 14px;
+}
+.stat-card .stat-num { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--ink); line-height: 1; }
+.stat-card .stat-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted); }
+.stat-card.accent { background: var(--accent); border-color: var(--accent); }
+.stat-card.accent .stat-num { color: white; }
+.stat-card.accent .stat-label { color: rgba(255,255,255,0.75); }
+
+.main-content { padding: 0 40px 40px; }
+
+.os-section { margin-bottom: 28px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.os-section-header { display: flex; align-items: center; gap: 10px; padding: 14px 22px; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; }
+.os-section-header:hover { background: var(--surface2); }
+.os-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.os-section-header h2 { font-family: 'DM Serif Display', serif; font-size: 18px; }
+.os-periodo { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink-muted); margin-left: 6px; }
+.os-count { margin-left: auto; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink-muted); background: var(--surface2); padding: 3px 10px; border-radius: 20px; margin-right: 8px; }
+.collapse-icon { font-size: 12px; color: var(--ink-muted); transition: transform 0.2s; }
+.collapsed .collapse-icon { transform: rotate(-90deg); }
+.os-table-wrap { overflow: hidden; transition: max-height 0.3s ease; }
+.os-table-wrap.hidden { display: none; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead tr { background: var(--surface2); }
+thead th { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-muted); text-align: left; padding: 9px 18px; border-bottom: 1px solid var(--border); font-weight: 500; }
+tbody tr { border-bottom: 1px solid var(--surface2); transition: background 0.1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--bg); }
+tbody td { padding: 9px 18px; color: var(--ink); vertical-align: middle; }
+.drug-name { font-weight: 600; }
+.brand-tag { display: inline-block; background: var(--ink); color: #f4f1eb; font-family: 'DM Mono', monospace; font-size: 10px; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.02em; }
+.badge { display: inline-block; font-family: 'DM Mono', monospace; font-size: 10px; padding: 2px 8px; border-radius: 4px; }
+.badge-si { background: #d4edda; color: #1a6b35; }
+.badge-no { background: #f5e8e3; color: #c4441c; }
+.badge-special { background: #fff3cd; color: #856404; }
+.pct { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 600; color: var(--accent); }
+.vigencia { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink-muted); }
+.no-results { text-align: center; padding: 50px 20px; color: var(--ink-muted); font-style: italic; font-size: 15px; }
+.mono { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink-muted); }
+
+/* CSV Upload Panel */
+.upload-panel {
+  margin: 0 40px 24px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.upload-panel-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 22px; cursor: pointer; user-select: none;
+  border-bottom: 1px solid transparent;
+  transition: background 0.15s;
+}
+.upload-panel-header:hover { background: var(--surface2); }
+.upload-panel-header.open { border-bottom-color: var(--border); }
+.upload-panel-title {
+  font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--ink-muted); font-weight: 500;
+}
+.upload-panel-badge {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  background: var(--accent); color: white;
+  padding: 2px 8px; border-radius: 20px; margin-left: 6px;
+}
+.upload-chevron { margin-left: auto; font-size: 11px; color: var(--ink-muted); transition: transform 0.2s; }
+.upload-chevron.open { transform: rotate(180deg); }
+.upload-panel-body { display: none; padding: 20px 22px; }
+.upload-panel-body.open { display: block; }
+
+.upload-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.upload-slot {
+  border: 1.5px dashed var(--border); border-radius: 8px;
+  padding: 12px 14px; cursor: pointer; transition: all 0.15s;
+  position: relative; background: var(--bg);
+}
+.upload-slot:hover { border-color: var(--accent); background: var(--accent-light); }
+.upload-slot.loaded { border-style: solid; border-color: #2d6a3f; background: #e3f0e8; }
+.upload-slot-name {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--ink-muted); margin-bottom: 4px;
+}
+.upload-slot.loaded .upload-slot-name { color: #2d6a3f; }
+.upload-slot-status { font-size: 12px; color: var(--ink-muted); }
+.upload-slot.loaded .upload-slot-status { color: #2d6a3f; font-weight: 600; }
+.upload-slot input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+
+.upload-hint {
+  font-size: 12px; color: var(--ink-muted); line-height: 1.5;
+  border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px;
+}
+.upload-hint strong { color: var(--ink); }
+.upload-hint code {
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  background: var(--surface2); padding: 1px 5px; border-radius: 3px;
+}
+.upload-reset {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.05em;
+  padding: 6px 12px; border: 1.5px solid var(--border); border-radius: 5px;
+  background: transparent; color: var(--ink-muted); cursor: pointer;
+  transition: all 0.15s; margin-top: 12px;
+}
+.upload-reset:hover { border-color: var(--accent); color: var(--accent); }
+
+.slot-undo {
+  display: block; margin-top: 5px;
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  color: #2d6a3f; cursor: pointer; text-decoration: underline;
+  background: none; border: none; padding: 0;
+}
+.slot-undo:hover { color: var(--accent); }
+
+.upload-slot.loading { border-color: #5a3a00; background: #f5ede0; }
+.upload-slot.loading .upload-slot-name { color: #5a3a00; }
+.upload-slot.loading .upload-slot-status { color: #5a3a00; }
+
+/* Sub-secciones OSDE */
+.sub-section-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 22px; border-bottom: 1px solid var(--border);
+  cursor: pointer; user-select: none; background: var(--surface2);
+}
+.sub-section-header:hover { background: #e8e3dc; }
+.sub-section-header.collapsed .collapse-icon { transform: rotate(-90deg); }
+.sub-label {
+  font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--ink-muted); font-weight: 500;
+}
+
+/* Upload slot group label */
+.upload-slot-group {
+  grid-column: 1 / -1;
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-muted); padding: 6px 0 2px;
+  border-top: 1px solid var(--border); margin-top: 4px;
+}
+.upload-slot-group:first-child { border-top: none; margin-top: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Medicación <span>Convenida</span></h1>
+  </div>
+
+</header>
+
+<div class="filters-bar">
+  <div class="filter-group">
+    <label>Obra Social</label>
+    <select id="filterOS" onchange="render()">
+      <option value="">Todas las Obras Sociales</option>
+      <option value="MEDICUS">MEDICUS</option>
+      <option value="OSDE">OSDE</option>
+      <option value="SMG">Swiss Medical (SMG)</option>
+      <option value="APSOT">APSOT / Techint</option>
+      <option value="ASE_MEDIFE">MEDIFE</option>
+      <option value="COLEGIO_ESC">Colegio Escribanos</option>
+      <option value="IOSEP">IASEP Formosa</option>
+      <option value="OMINT">OMINT</option>
+      <option value="PODER_JUD">Poder Judicial</option>
+      <option value="SEMPRE">SEMPRE</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Droga / Medicamento</label>
+    <input type="text" id="filterDrug" placeholder="Ej: Bortezomib, Rituximab..." oninput="render()">
+  </div>
+  <button class="btn-clear" onclick="clearFilters()">✕ Limpiar</button>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-card accent"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Resultados</div></div>
+  <div class="stat-card"><div class="stat-num" id="statOS">10</div><div class="stat-label">Obras Sociales</div></div>
+</div>
+
+<!-- Panel de actualización mensual -->
+<div class="upload-panel">
+  <div class="upload-panel-header" id="uploadToggle" onclick="toggleUpload()">
+    <span style="font-size:14px">📂</span>
+    <span class="upload-panel-title">En caso de necesitar actualizar datos</span>
+    <span class="upload-panel-badge">CSV</span>
+    <span class="upload-chevron" id="uploadChevron">▼</span>
+  </div>
+  <div class="upload-panel-body" id="uploadBody">
+    <div class="upload-grid" id="uploadGrid"></div>
+    <div class="upload-hint">
+      <strong>¿Cómo actualizar?</strong> Hacé clic en el casillero de la obra social que se renovó y seleccioná el archivo (Excel o PDF) exportado desde Sharepoint.
+    </div>
+  </div>
+</div>
+
+<div class="main-content" id="mainContent"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// DATOS: cada entrada es [droga, marca, ...cols_extra]
+// ─────────────────────────────────────────────────────────────
+
+const COLORS = {
+  MEDICUS:     { dot:'#1a4a6b', head:'#e3edf5' },
+  OSDE:        { dot:'#2d6a3f', head:'#e3f0e8' },
+  SMG:         { dot:'#6b1a4a', head:'#f0e3ed' },
+  APSOT:       { dot:'#5a3a00', head:'#f5ede0' },
+  ASE_MEDIFE:  { dot:'#003d5a', head:'#e0f0f7' },
+  COLEGIO_ESC: { dot:'#4a004a', head:'#f5e0f5' },
+  IOSEP:       { dot:'#1a3a00', head:'#e8f5e0' },
+  OMINT:       { dot:'#8b0000', head:'#faeaea' },
+  PODER_JUD:   { dot:'#00334a', head:'#e0eef5' },
+  SEMPRE:      { dot:'#1a0048', head:'#ede0f7' },
+};
+
+// Helper para generar rows estándar [droga, marca, codAmb, codInt]
+function r(ca,ci,d,m){ return [d,m,ca,ci]; }
+
+const MEDICUS_ROWS = [
+  r("30463505","30463506","ACETATO DE LEUPROLIDE","LECTRUM 22,5 ML KIT"),
+  r("30463502","30463504","ACETATO DE LEUPROLIDE","LECTRUM 3.75 MG KIT"),
+  r("30463501","30463503","ACETATO DE LEUPROLIDE","LECTRUM 7.5 MG KIT"),
+  r("10271915","10271916","ACIDO ZOLEDRONICO","ACIDO ZOLEDR.MICROSULES 4 MG AMP"),
+  r("10015026","10015027","ADALIMUMAB","AMGEVITA 40MG/0.8ML AUTOINY X 2"),
+  r("10015013","10015014","ADALIMUMAB","HUMIRA AC LAP AUTOINY 0.4ML X 2"),
+  r("10015015","10015016","ADALIMUMAB","HUMIRA AC LAP AUTOINY 0.8ML X 1"),
+  r("10750002","10750003","ALFILIBERCEPT","EYLIA 40 mg/ml"),
+  r("10559901","10559902","APREPITANT","EMEND TRIPACK CAPS.X 1+CAPS.X2"),
+  r("30280082","30280083","AZACITIDINA","AZAMEX 100 mg f.a.x 1"),
+  r("30280166","30280167","AZACITIDINA","AZACITIDINA LKM 100 MG AMP"),
+  r("11154501","11154502","BACILO DE CALMETTE GUERIN","BCG CULTIVO SSI FCO AMP X 4"),
+  r("11154503","11154504","BACILO DE CALMETTE GUERIN","CARCIVAC FCO AMP"),
+  r("10276906","10276907","BELATACEPT","NULOJIX 250mg/vial pvo.liof.x 1"),
+  r("30280158","30280159","BENDAMUSTINA","BENDAMUSTINA KEMEX 100 MG FAMP"),
+  r("30280156","30280157","BENDAMUSTINA","BENDAMUSTINA MICROSULES 100 MG FAMP"),
+  r("30280154","30280155","BENDAMUSTINA","BENDAMUSTINA MICROSULES 25 MG FAMP"),
+  r("30280004","30280007","BENDAMUSTINA","BENDAMUSTINA VARIFARMA 100 MG FAMP"),
+  r("30280012","30280013","BENDAMUSTINA","BENDAMUSTINA VARIFARMA 25 MG FAMP"),
+  r("30440117","30440118","BORTEZOMIB","BORTMEX 3.5 MG INY"),
+  r("30440107","30440108","BORTEZOMIB","GYSATY 3.5 mg f.a.x 1"),
+  r("30760310","30760311","CABAZITAXEL","BLACKXELL 60 MG F/A"),
+  r("30760305","30760306","CABAZITAXEL","CABAZIL FA 1.5ML + DILUY"),
+  r("33003308","33003309","CARBOPLATINO","CARBOPLATINO 150 MG KEMEX F.A"),
+  r("33003306","33003307","CARBOPLATINO","CARBOPLATINO 150 MG MICROSULES F.A"),
+  r("35570705","35570706","CARBOPLATINO","CARBOPLATINO GLENMARK 150 MG INY."),
+  r("35570713","35570714","CARBOPLATINO","CARBOPLATINO GLENMARK 450 MG INY."),
+  r("30771104","30771105","CARBOPLATINO","CARBOPLATINO 150MG TUTEUR LIOF"),
+  r("33003310","33003311","CARBOPLATINO","CARBOPLATINO 450 MG KEMEX F.A"),
+  r("33003304","33003305","CARBOPLATINO","CARBOPLATINO 450 MG MICROSULES F.A"),
+  r("30890605","30890609","CARBOPLATINO","CARBOPLATINO LKM 150 MG"),
+  r("30280118","30280119","CARFILZOMIB","ALCAF 60 MG"),
+  r("30280108","30280109","CARFILZOMIB","CARFIZOL FAMP"),
+  r("30280110","30280111","CARFILZOMIB","FILZOCAR 60 MG TUTEUR"),
+  r("31550204","31550205","CICLOFOSFAMIDA","CICLOFOSFAMIDA LKM 1GR FA"),
+  r("33410305","33410306","CICLOFOSFAMIDA","CICLOFOSFAMIDA MICROSULES 1GR"),
+  r("33410307","33410308","CICLOFOSFAMIDA","CICLOFOSFAMIDA MICROSULES 200 MG"),
+  r("33008902","33008903","CISPLATINO","CISPLATINO 10 MG FCO AMP TUTEUR"),
+  r("33008905","33008906","CISPLATINO","CISPLATINO 50 MG FCO AMP TUTEUR"),
+  r("30890517","30890518","CISPLATINO","CISPLATINO 50 MG KEMEX AMP"),
+  r("30890511","30890512","CISPLATINO","CISPLATINO 50 MG MICROSULES AMP"),
+  r("33015009","33015010","CITARABINA","CITARABINA MICROSULES 100 MG FA"),
+  r("33015003","33015004","CITARABINA","CITARABINA MICROSULES 1000 MG FA"),
+  r("11550105","11550106","DACARBAZINA","DACARBAZINA VARIFARMA 200 MG AMP."),
+  r("11550101","11550103","DACARBAZINA","ONCOCARBIL 200 MG INY.LIOF.F.A."),
+  r("30822112","30822113","DECITABINA","SIGNUM 50 ML FCO.AMP x 1"),
+  r("30822105","30822109","DECITABINE","DETAVI 50MG AMP"),
+  r("35570318","35570319","DEGARELIX","FIRMAGON 120MG FA X 2"),
+  r("35570306","35570311","DEGARELIX","FIRMAGON 80MG FA"),
+  r("10015005","10015007","DENOSUMAB","PROLIA 60 MG/ML JGA PRELL"),
+  r("30700139","30700140","DENOSUMAB","XGEVA 70MG/ML INY"),
+  r("30892023","30892024","DOCETAXEL","DOCETAXEL 20 MG KEMEX FAMP"),
+  r("33410659","33410660","DOCETAXEL","DOCETAXEL 20MG AMP MICROSULES"),
+  r("33410661","33410662","DOCETAXEL","DOCETAXEL 80 MG AMP MICROSULES"),
+  r("30892025","30892026","DOCETAXEL","DOCETAXEL 80 MG KEMEX FAMP"),
+  r("10382935","10382936","DOSTARLIMAB","JEMPERLI 50MG x 10 ML"),
+  r("30890410","30890411","DOXORUBICINA","DOXORUBICINA 10 MG MICROSULES AMP"),
+  r("30364507","30364508","DOXORUBICINA","DOXORUBICINA 50 MG MICROSULES AMP"),
+  r("30675200","30675201","DOXORUBICINA","DOXORUBICINA LIPOSOMAL 20 MG INY RAFFO"),
+  r("30892109","30892110","EPIRUBICINA","EPIRUBICINA 50 MG IMA INY"),
+  r("30700193","30700194","ERIBULINA MASILATO","ELEFIX VIAL X 1 X 2 ML"),
+  r("10773303","10773307","ERITROPOYECTINA","HEMAX 10.000 UI FCO AMP"),
+  r("30890310","30890311","ETOPOSIDO","ETOPOSIDO MICROSULES 100 MG INY"),
+  r("10773602","10773603","FILGRASTIM","NEUTROMAX 30 MUI (300 MCG) F.A.X 5"),
+  r("10773601","10773604","FILGRASTIM","NEUTROMAX 48 MUI (480 MCG) AMP X 5"),
+  r("33000203","33000210","FLUOROURACILO","FLUOROURACILO MICROSULES 500MG INY"),
+  r("10559903","10559904","FOSAPREPITANT","EMEND IV VIAL 150 MG"),
+  r("30662014","30662015","GEMCITABINA","GEMCITABINA 1 GR KEMEX F.AMP."),
+  r("30662012","30662013","GEMCITABINA","GEMCITABINA 200 MG KEMEX F.AMP."),
+  r("10421401","10421405","GOSERELIN","ZOLADEX 3.6 MG INY"),
+  r("10421402","10421406","GOSERELIN","ZOLADEX LA 10.8 MG INY"),
+  r("10252538","10252548","HIERRO","FERINJECT INY"),
+  r("31180201","31180202","IFOSFAMIDA","IFOSFAMIDA 1 GR MICROSULES"),
+  r("30280035","30280036","IMATINIB","AGACEL 100 MG COMP x 180"),
+  r("30280033","30280034","IMATINIB","AGACEL 400 MG COMP x 30"),
+  r("30280152","30280153","IMATINIB","TIMAB 100 MG COMP x 180"),
+  r("30280142","30280143","IMATINIB","TIMAB 400 MG COMP x 30"),
+  r("10315011","10315012","INFLIXIMAB","IXIFI 100 MG AMP x 1"),
+  r("10450810","10450818","INMUNOGLOBULINA HUMANA","PRIVIGEN 5 GR FA 50 ML"),
+  r("30700110","30700111","IPILIMUMAB","YERVOY 50 mg/10 ml vial x 1"),
+  r("10840420","10840422","IRINOTECAN","IRINOTECAN GLENMARK 100 MG FA"),
+  r("10840410","10840411","IRINOTECAN","IRINOTECAN KEMEX 100 MG FA"),
+  r("10840414","10840415","IRINOTECAN","IRINOTECAN MICROSULES 100 MG FCOAMP"),
+  r("30890306","30890311","LEUCOVORINA CALCICA","LEUCOVORINA 50 MG TUTEUR AMP"),
+  r("10773620","10773621","LIPEGFILGRASTIM","LONQUEX 6 MG JGA PRELL X 1"),
+  r("31890004","31890005","MELFALANO INYECTABLE","MELFALAN FRIMIRT 50 MG IV"),
+  r("30490203","30490204","MEPREDNISONA","DELTISONA B 40 MG COMP.X 20"),
+  r("33015107","33015109","METOTREXATO","METOTREXATO 1000 MG FAMP MICROSULES"),
+  r("33015113","33015114","METOTREXATO","METOTREXATO 50 MG FAMP MICROSULES"),
+  r("33015108","—","METOTREXATO","METOTREXATO 500 MG FAMP MICROSULES"),
+  r("30891608","30891609","MITOMICINA","MITOMICINA C 20 MG F AMP MICROSULES"),
+  r("10450113","10450114","NETUPITANT","AKYNZEO"),
+  r("30700174","30700190","OBINUTUZUMAB","GAZYVA 1000 MG / 40 ML VIAL"),
+  r("10742805","10742807","OCTREOTIDA","SANDOSTATIN LAR 20 MG JGA PRE x 1"),
+  r("17742804","17742806","OCTREOTIDA","SANDOSTATIN LAR 30 MG JGA PRE x 1"),
+  r("10278201","10278202","OMALIZUMAB","XOLAIR 150 MG FAMP X 1"),
+  r("10278203","10278204","OMALIZUMAB","XOLAIR 150 MG JGA PRELL X 1"),
+  r("30890707","30890708","OXALIPLATINO","OXALIPLATINO KEMEX 100MG INY"),
+  r("35570217","35570218","OXALIPLATINO","OXALIPLATINO MICROSULES 100MG INY"),
+  r("30890709","30890710","OXALIPLATINO","OXALIPLATINO 50 MG KEMEX INY"),
+  r("35570215","35570216","OXALIPLATINO","OXALIPLATINO MICROSULES 50MG INY"),
+  r("33410649","33410650","PACLITAXEL","PACLITAXEL KEMEX 30 MG"),
+  r("33410640","33410641","PACLITAXEL","PACLITAXEL KEMEX 100 MG"),
+  r("33410638","33410639","PACLITAXEL","PACLITAXEL KEMEX 150 MG"),
+  r("30890918","30890919","PACLITAXEL ALBUMINA","TAYCOVIT A"),
+  r("30890913","30890916","PACLITAXEL + ALBUMINA","ABRAXANE 100MG INY"),
+  r("10361206","10361208","PAMIDRONATO DISODICO","AMINOMUX 30 MG INY.LIOF.F.A.X 1"),
+  r("10361205","10361207","PAMIDRONATO DISODICO","AMINOMUX 90 MG INY.LIOF.F.A.X 1"),
+  r("30540105","30540106","PANITUMUMAB IV","VECTIBIX 100 MG X 5ML"),
+  r("33412108","33412109","PEGASPARGASA","ONCASPAR PVO.P/SOL.INY.VIAL X 1"),
+  r("30280138","30280139","PEMETREXED","PEMETREXED 500 KEMEX FCO AMP"),
+  r("10773612","10773615","PLERIZAFOR","REVIXIL 20 MG X 1"),
+  r("30700126","30700127","RAMUCIRUMAB","CYRAMZA 500 MG 10 MG/ML F.A."),
+  r("10278300","10278317","RANIBIZUMAB","LUCENTIS 1VIAL X 0,23 ML"),
+  r("10706304","10706305","RITUXIMAB SC","MABTHERA SC 1400 mg/11.7 ml vial x 1"),
+  r("10706306","10706307","RITUXIMAB IV","NOVEX 100 MG VIAL ENV X 1 AMP"),
+  r("10706308","10706309","RITUXIMAB IV","NOVEX 500 MG VIAL x 1"),
+  r("10742808","10742810","SECUKINUMAB","COSENTYX 150MG/1ML AUTOINY X 1"),
+  r("10742811","10742812","SECUKINUMAB","COSENTYX 300MG/2ML AUTOINY X 1"),
+  r("10220007","10220008","SOMATOTROFINA","NORDITROPIN FLEXPRO 15 MG X 1"),
+  r("10041001","10041002","TOXINA BOTULINICA","BOTOX 100UI AMP"),
+  r("30890907","30890912","TRABECTEDINA","YONDELIS 1 MG FCO AMP"),
+  r("10774801","10774802","TRIPTORELINA","DECAPEPTYL RETARD IM 3.75 MG KIT"),
+  r("30920102","30920103","TRIPTORELINA","DECAPEPTYL RETARD IM 11.25 MG KIT"),
+  r("33000303","33000304","VINBLASTINA","VINBLASTINA KEMEX 10MG x 1"),
+  r("33008405","33008406","VINCRISTINA","VINCRISTINA KEMEX 1 MG INY.A.X 1"),
+  r("33008403","33008404","VINCRISTINA","VINCRISTINA LKM 1 MG INY.A.X 1"),
+  r("30572110","30572111","VINORELBINE","VINOREL 10 MG FCO AMP"),
+  // OSDE alto costo merged
+  r("—","56697","ATEZOLIZUMAB","TECENTRIQ 840 mg vial x 1 x 14 ml"),
+  r("—","54523","ATEZOLIZUMAB","TECENTRIQ 1200 mg vial x 1 x 20 ml"),
+  r("—","55724","AZACITIDINA","AZAMEX 100 mg f.a.x 1"),
+  r("—","53831","AZACITIDINA","AZZA 100 mg iny.liof.f.a.x 1"),
+  r("—","47950","BELATACEPT","NULOJIX 250mg/vial pvo.liof.x 1"),
+  r("—","53126","BEVACIZUMAB","BEVAX 400 mg vial x 1 x 16 ml"),
+  r("—","53125","BEVACIZUMAB","BEVAX 100 mg vial x 1 x 4 ml"),
+  r("—","50744","BORTEZOMIB","BORATER 3.5 mg f.a.x 1"),
+  r("—","57820","BORTEZOMIB","BORTMEX 3.5 mg f.a.x 1"),
+  r("—","52471","BRENTUXIMAB","ADCETRIS 50 mg vial x 1"),
+  r("—","54175","CABAZITAXEL","CABAZIL FA 1.5ML + DILUY"),
+  r("—","42000","CETUXIMAB","ERBITUX vial x 20 ml"),
+  r("—","42001","CETUXIMAB","ERBITUX vial x 100 ml"),
+  r("—","54016","DARATUMUMAB","DARZALEX 100 MG/5 ML VIAL X 1"),
+  r("—","54017","DARATUMUMAB","DARZALEX 400 MG/20 ML VIAL X 1"),
+  r("—","52338","DENOSUMAB","XGEVA 120mg/1.7 ml iny.vial x1"),
+  r("—","56960","DURVALUMAB","IMFINZI 120 MG VIAL X 1 X 2.4 ML"),
+  r("—","56961","DURVALUMAB","IMFINZI 500 MG VIAL X 1 X 10 ML"),
+  r("—","59622","ERIBULINA","ELEFIX VIAL X 1 X 2 ML"),
+  r("—","58163","INFLIXIMAB","IXIFI 100 MG F.A.X 1"),
+  r("—","52300","IPILIMUMAB","YERVOY 50 mg/10 ml vial x 1"),
+  r("—","59878","ISATUXIMAB","SARCLISA 500 MG FCO AMP"),
+  r("—","59877","ISATUXIMAB","SARCLISA 100 MG FCO AMP"),
+  r("—","55636","LEUPROLIDE ACETATO","LECTRUM 22,5 ML KIT"),
+  r("—","60151","NAB PACLITAXEL","TAYCOVIT A"),
+  r("—","52463","NIVOLUMAB","OPDIVO 40 mg/4 ml vial x 1"),
+  r("—","52464","NIVOLUMAB","OPDIVO 100 mg/10 ml vial x 1"),
+  r("—","53314","OBINUTUZUMAB","GAZYVA 1000 MG / 40 ML VIAL"),
+  r("—","56226","OCRELIZUMAB","OCREVUS 300 mg/10 ml vial x 1"),
+  r("—","49603","OCTREOTIDA","SANDOSTATIN LAR 20 MG JGA.PRELL.X 1"),
+  r("—","49604","OCTREOTIDA","SANDOSTATIN LAR 30 MG JGA.PRELL.X 1"),
+  r("—","56052","PEGASPARGASA","ONCASPAR PVO.P/SOL.INY.VIAL X 1"),
+  r("—","51538","PERTUZUMAB","PERJETA 420 mg/14 ml a.x 1"),
+  r("—","60656","PERTUZUMAB+TRASTUZUMAB","PHESGO 1200/600MG VIAL X1 X15ML"),
+  r("—","60655","PERTUZUMAB+TRASTUZUMAB","PHESGO 600/600 VIAL X 10 ML"),
+  r("—","54138","RAMUCIRUMAB","CYRAMZA 100 MG 10 MG/ML F.A.X 1 X 10 ML"),
+  r("—","52152","RITUXIMAB","NOVEX 100 mg vial x 1"),
+  r("—","52153","RITUXIMAB","NOVEX 500 mg vial x 1"),
+  r("—","44657","TOCILIZUMAB","ACTEMRA 200MG/10ML F.A.X 1"),
+  r("—","52381","TRABECTEDINA","YONDELIS 1 MG FCO AMP"),
+  r("—","57805","TRASTUZUMAB","TRAZIMERA 440 mg f.a. x 1+ solv."),
+  r("—","51535","TRASTUZUMAB EMTANSINA","KADCYLA 100 MG VIAL X 1"),
+  r("—","51536","TRASTUZUMAB EMTANSINA","KADCYLA 160 MG VIAL X 1"),
+  r("—","55364","VEDOLIZUMAB","ENTYVIO 300 mg vial x 1"),
+  r("—","46763","PANITUMUMAB","VECTIBIX 100 MG X 5ML"),
+  r("—","36401","LEUPROLIDE","ELIGARD 22.5 MG KIT"),
+  r("—","48435","LEUPROLIDE","ELIGARD 45 MG KIT"),
+  r("—","56228","ISAVUCONAZOL","CRESEMBA 200 MG F.A X 1"),
+  r("—","56227","ISAVUCONAZOL","CRESEMBA 100 MG CAPS"),
+  r("—","60883","CABAZITAXEL IV","BLACKXELL 60 MG FCO AMP"),
+  r("—","44596","DECITABINE","DETAVI 50 MG AMPOLLAS"),
+  r("—","51427","PLERIXAFOR","REVIXIL 20 MG FA X 1"),
+  r("—","60520","NATALIZUMAB","TYSABRI 150 MG/ML JER.PRELL. X 2"),
+  r("—","52309","NATALIZUMAB","TYSABRI 300 mg/15 ml vial x 1"),
+];
+
+// Para SMG, APSOT, ASE_MEDIFE, COLEGIO_ESC, PODER_JUD usamos la misma estructura base
+// (todas tienen las mismas columnas: droga, marca, codAmb, codInt)
+const BASE_ROWS = [
+  r("30674102","30674103","ACETATO DE LEUPROLIDE","ELIGARD 22.5 MG KIT"),
+  r("30674104","30674105","ACETATO DE LEUPROLIDE","ELIGARD 45 MG KIT X 1"),
+  r("30463505","30463506","ACETATO DE LEUPROLIDE","LECTRUM 22,5 ML KIT"),
+  r("30463502","30463504","ACETATO DE LEUPROLIDE","LECTRUM 3.75 MG KIT"),
+  r("30463501","30463503","ACETATO DE LEUPROLIDE","LECTRUM 7.5 MG KIT"),
+  r("10271915","10271916","ACIDO ZOLEDRONICO","ACIDO ZOLEDR.MICROSULES 4 MG AMP"),
+  r("10015026","10015027","ADALIMUMAB","AMGEVITA 40MG/0.8ML AUTOINY X 2"),
+  r("10015013","10015014","ADALIMUMAB","HUMIRA AC LAP AUTOINY 0.4ML X 2"),
+  r("10015015","10015016","ADALIMUMAB","HUMIRA AC LAP AUTOINY 0.8ML X 1"),
+  r("10559901","10559902","APREPITANT","EMEND TRIPACK CAPS.X 1+CAPS.X2"),
+  r("30700147","30700148","ATEZOLIZUMAB","TECENTRIQ 1200mg vial x 1 x 20 ml"),
+  r("30700188","30700189","ATEZOLIZUMAB","TECENTRIQ 840 mg vial x 1 x 14 ml"),
+  r("30280082","30280083","AZACITIDINA","AZAMEX 100 mg f.a.x 1"),
+  r("30280058","30280059","AZACITIDINA","AZZA 100 mg iny.liof.f.a.x 1"),
+  r("30280166","30280167","AZACITIDINA","AZACITIDINA LKM 100 MG AMP"),
+  r("11154501","11154502","BACILO DE CALMETTE GUERIN","BCG CULTIVO SSI FCO AMP X 4"),
+  r("11154503","11154504","BACILO DE CALMETTE GUERIN","CARCIVAC FCO AMP"),
+  r("10276906","10276907","BELATACEPT","NULOJIX 250mg/vial pvo.liof.x 1"),
+  r("30280158","30280159","BENDAMUSTINA","BENDAMUSTINA KEMEX 100 MG FAMP"),
+  r("30280156","30280157","BENDAMUSTINA","BENDAMUSTINA MICROSULES 100 MG FAMP"),
+  r("30280154","30280155","BENDAMUSTINA","BENDAMUSTINA MICROSULES 25 MG FAMP"),
+  r("30280004","30280007","BENDAMUSTINA","BENDAMUSTINA VARIFARMA 100 MG FAMP"),
+  r("30280012","30280013","BENDAMUSTINA","BENDAMUSTINA VARIFARMA 25 MG FAMP"),
+  r("30700156","30700157","BEVACIZUMAB","BEVAX 100 mg vial x 1 x 4 ml"),
+  r("30700158","30700159","BEVACIZUMAB","BEVAX 400 mg vial x 1 x 16 ml"),
+  r("30700208","30700209","BEVACIZUMAB","ZIRAVEB 100 mg/4 ml a.x 1"),
+  r("30700210","30700211","BEVACIZUMAB","ZIRAVEB 400 mg/16 ml a.x 1"),
+  r("30360403","30360404","BLEOMICINA","BLEOMICINA SULF IVAX 15 U FCO AMP"),
+  r("30440103","30440104","BORTEZOMIB","BORATER 3.5 mg f.a.x 1"),
+  r("30440117","30440118","BORTEZOMIB","BORTMEX 3.5 MG INY"),
+  r("30440107","30440108","BORTEZOMIB","GYSATY 3.5 mg f.a.x 1"),
+  r("30700180","30700182","BRENTUXIMAB VEDOTIN","ADCETRIS 50 MG FCO AMP"),
+  r("31850111","31850112","BUSULFAN","BUSULFAN 60 mg f.a.x 8 x 10 ml"),
+  r("30760310","30760311","CABAZITAXEL","BLACKXELL 60 MG F/A"),
+  r("30760305","30760306","CABAZITAXEL","CABAZIL FA 1.5ML + DILUY"),
+  r("33003308","33003309","CARBOPLATINO","CARBOPLATINO 150 MG KEMEX F.A"),
+  r("33003306","33003307","CARBOPLATINO","CARBOPLATINO 150 MG MICROSULES F.A"),
+  r("33003302","33003303","CARBOPLATINO","CARBOPLATINO 450 MG TEVA FCO AMP (TUTEUR)"),
+  r("35570705","35570706","CARBOPLATINO","CARBOPLATINO GLENMARK 150 MG INY."),
+  r("35570713","35570714","CARBOPLATINO","CARBOPLATINO GLENMARK 450 MG INY."),
+  r("30771104","30771105","CARBOPLATINO","CARBOPLATINO 150MG TUTEUR LIOF"),
+  r("33003310","33003311","CARBOPLATINO","CARBOPLATINO 450 MG KEMEX F.A"),
+  r("33003304","33003305","CARBOPLATINO","CARBOPLATINO 450 MG MICROSULES F.A"),
+  r("30890605","30890609","CARBOPLATINO","CARBOPLATINO LKM 150 MG"),
+  r("30280118","30280119","CARFILZOMIB","ALCAF 60 MG"),
+  r("30280108","30280109","CARFILZOMIB","CARFIZOL FAMP"),
+  r("30280110","30280111","CARFILZOMIB","FILZOCAR 60 MG TUTEUR"),
+  r("30540102","30540104","CETUXIMAB","ERBITUX X 1 VIAL X 100 ML"),
+  r("30540101","30540103","CETUXIMAB","ERBITUX X 1 VIAL X 20 ML"),
+  r("33410301","33410303","CICLOFOSFAMIDA","CICLOFOSFAMIDA 1 GR FAMP GP PHARM"),
+  r("33000701","33000702","CICLOFOSFAMIDA","CICLOFOSFAMIDA 200 MG FA GPPHARM"),
+  r("31550204","31550205","CICLOFOSFAMIDA","CICLOFOSFAMIDA LKM 1GR FA"),
+  r("33410305","33410306","CICLOFOSFAMIDA","CICLOFOSFAMIDA MICROSULES 1GR"),
+  r("33410307","33410308","CICLOFOSFAMIDA","CICLOFOSFAMIDA MICROSULES 200 MG"),
+  r("33008902","33008903","CISPLATINO","CISPLATINO 10 MG FCO AMP TUTEUR"),
+  r("33008905","33008906","CISPLATINO","CISPLATINO 50 MG FCO AMP TUTEUR"),
+  r("30890517","30890518","CISPLATINO","CISPLATINO 50 MG KEMEX AMP"),
+  r("30890511","30890512","CISPLATINO","CISPLATINO 50 MG MICROSULES AMP"),
+  r("33015009","33015010","CITARABINA","CITARABINA MICROSULES 100 MG FA"),
+  r("33015003","33015004","CITARABINA","CITARABINA MICROSULES 1000 MG FA"),
+  r("11550105","11550106","DACARBAZINA","DACARBAZINA VARIFARMA 200 MG AMP."),
+  r("11550101","11550103","DACARBAZINA","ONCOCARBIL 200 MG INY.LIOF.F.A.X 1"),
+  r("30700150","30700153","DARATUMUMAB","DARZALEX 100 MG/5 ML x 1"),
+  r("30700151","30700152","DARATUMUMAB","DARZALEX 400 MG/20 ML x 1"),
+  r("30700216","30700217","DARATUMUMAB","DARZALEX SC 1800 MG/15 ML"),
+  r("30822112","30822113","DECITABINA","SIGNUM 50 ML FCO.AMP x 1"),
+  r("30822105","30822109","DECITABINE","DETAVI 50MG AMP"),
+  r("35570318","35570319","DEGARELIX","FIRMAGON 120MG FA X 2"),
+  r("35570306","35570311","DEGARELIX","FIRMAGON 80MG FA"),
+  r("10015005","10015007","DENOSUMAB","PROLIA 60 MG/ML JGA PRELL"),
+  r("30700139","30700140","DENOSUMAB","XGEVA 70MG/ML INY"),
+  r("30892023","30892024","DOCETAXEL","DOCETAXEL 20 MG KEMEX FAMP"),
+  r("33410659","33410660","DOCETAXEL","DOCETAXEL 20MG AMP MICROSULES"),
+  r("33410661","33410662","DOCETAXEL","DOCETAXEL 80 MG AMP MICROSULES"),
+  r("30892025","30892026","DOCETAXEL","DOCETAXEL 80 MG KEMEX FAMP"),
+  r("10382935","10382936","DOSTARLIMAB","JEMPERLI 50MG x 10 ML"),
+  r("30890410","30890411","DOXORUBICINA","DOXORUBICINA 10 MG MICROSULES AMP"),
+  r("30364507","30364508","DOXORUBICINA","DOXORUBICINA 50 MG MICROSULES AMP"),
+  r("30675200","30675201","DOXORUBICINA","DOXORUBICINA LIPOSOMAL 20 MG INY RAFFO"),
+  r("30890920","30890921","DURVALUMAB","IMFINZI 120 MG VIAL X 2.4 ML x 1"),
+  r("30890914","30890917","DURVALUMAB","IMFINZI 500 MG VIAL X 10 ML x 1"),
+  r("30892109","30892110","EPIRUBICINA","EPIRUBICINA 50 MG IMA INY"),
+  r("30700193","30700194","ERIBULINA MASILATO","ELEFIX VIAL X 1 X 2 ML"),
+  r("10773303","10773307","ERITROPOYECTINA","HEMAX 10.000 UI FCO AMP"),
+  r("30890110","30890111","ETOPOSIDO","ETOPOSIDO MICROSULES 100 MG INY"),
+  r("10773610","10773611","FILGRASTIM","FILGEN 300 MCG JGA.PRELL.X 5"),
+  r("10773602","10773603","FILGRASTIM","NEUTROMAX 30 MUI (300 MCG) F.A.X 5"),
+  r("10773606","10773604","FILGRASTIM","NEUTROMAX 48 MUI (480 MCG) AMP X 5"),
+  r("30701104","30701105","FLUOROURACILO","FLUOROURACILO KEMEX 500 MG FCO AMP"),
+  r("33000203","33000210","FLUOROURACILO","FLUOROURACILO MICROSULES 500MG INY"),
+  r("10559903","10559904","FOSAPREPITANT","EMEND IV VIAL 150 MG"),
+  r("33410656","33410657","GEMCITABINA","GEMCITABINA 1 GR GP PHARM F.AMP"),
+  r("30662014","30662015","GEMCITABINA","GEMCITABINA 1 GR KEMEX F.AMP."),
+  r("33410655","33410658","GEMCITABINA","GEMCITABINA 200 MG GP PHARM F.AMP."),
+  r("30662012","30662013","GEMCITABINA","GEMCITABINA 200 MG KEMEX F.AMP."),
+  r("10421401","10421405","GOSERELIN","ZOLADEX 3.6 MG INY"),
+  r("10421402","10421406","GOSERELIN","ZOLADEX LA 10.8 MG INY"),
+  r("10252538","10252548","HIERRO","FERINJECT INY"),
+  r("31180201","31180202","IFOSFAMIDA","IFOSFAMIDA 1 GR MICROSULES"),
+  r("10315011","10315012","INFLIXIMAB","IXIFI 100 MG AMP x 1"),
+  r("10450813","10450817","INMUNOGLOBULINA HUMANA","CIELDOM 5 GR FA X 100 ML"),
+  r("10450809","—","INMUNOGLOBULINA HUMANA","PRIVIGEN 10 GR FA 100 ML"),
+  r("10450810","10450818","INMUNOGLOBULINA HUMANA","PRIVIGEN 5 GR FA 50 ML"),
+  r("30700110","30700111","IPILIMUMAB","YERVOY 50 mg/10 ml vial x 1"),
+  r("10840420","10840422","IRINOTECAN","IRINOTECAN GLENMARK 100 MG FA"),
+  r("10840410","10840411","IRINOTECAN","IRINOTECAN KEMEX 100 MG FA"),
+  r("10840414","10840415","IRINOTECAN","IRINOTECAN MICROSULES 100 MG FCOAMP"),
+  r("30700177","30700212","ISATUXIMAB","SARCLISA 100 MG FCO AMP"),
+  r("30700178","30700213","ISATUXIMAB","SARCLISA 500 MG FCO AMP"),
+  r("33410103","33410104","LEUCOVORINA","LEUCOCALCIN 15 MG COMP"),
+  r("30890306","30890307","LEUCOVORINA CALCICA","LEUCOVORINA 50 MG TUTEUR AMP"),
+  r("10773620","10773621","LIPEGFILGRASTIM","LONQUEX 6 MG JGA PRELL X 1"),
+  r("31890004","31890005","MELFALANO INYECTABLE","MELFALAN FRIMIRT 50 MG IV"),
+  r("30490203","30490204","MEPREDNISONA","DELTISONA B 40 MG COMP.X 20"),
+  r("33015107","33015109","METOTREXATO","METOTREXATO 1000 MG FAMP MICROSULES"),
+  r("33015113","33015114","METOTREXATO","METOTREXATO 50 MG FAMP MICROSULES"),
+  r("33015108","—","METOTREXATO","METOTREXATO 500 MG FAMP MICROSULES"),
+  r("30891608","30891609","MITOMICINA","MITOMICINA C 20 MG F AMP MICROSULES"),
+  r("30700201","30700202","NATALIZUMAB","TYSABRI 150 MG/ML JER.PRELL. X 2"),
+  r("30700116","30700117","NATALIZUMAB","TYSABRI 300 mg/15 ml vial x 1"),
+  r("10450113","10450114","NETUPITANT","AKYNZEO"),
+  r("30700135","30700136","NIVOLUMAB","OPDIVO 100 mg/10 ml vial x 1"),
+  r("30700133","30700134","NIVOLUMAB","OPDIVO 40 mg/4 ml vial x 1"),
+  r("30700206","30700207","NIVOLUMAB","OPDIVO 240MG/24ML"),
+  r("30700174","30700190","OBINUTUZUMAB","GAZYVA 1000 MG / 40 ML VIAL"),
+  r("30700149","30700183","OCRELIZUMAB","OCREVUS 300 mg/10 ml vial x 1"),
+  r("10742805","10742807","OCTREOTIDA","SANDOSTATIN LAR 20 MG JGA PRE x 1"),
+  r("17742804","17742806","OCTREOTIDA","SANDOSTATIN LAR 30 MG JGA PRE x 1"),
+  r("10278201","10278202","OMALIZUMAB","XOLAIR 150 MG FAMP X 1"),
+  r("10278203","10278204","OMALIZUMAB","XOLAIR 150 MG JGA PRELL X 1"),
+  r("10391803","10391804","ONDANSETRON","ONDANSETRON FRESENIUS 8 MG AMPOLLAS"),
+  r("13005203","13005204","ONDANSETRON","ONDANSETRON LKM 8 MG COMP.X 10"),
+  r("30890707","30890708","OXALIPLATINO","OXALIPLATINO KEMEX 100MG INY"),
+  r("35570217","35570218","OXALIPLATINO","OXALIPLATINO MICROSULES 100MG INY"),
+  r("30890709","30890710","OXALIPLATINO","OXALIPLATINO 50 MG KEMEX INY"),
+  r("35570215","35570216","OXALIPLATINO","OXALIPLATINO MICROSULES 50MG INY"),
+  r("33410649","33410650","PACLITAXEL","PACLITAXEL KEMEX 30 MG"),
+  r("33410640","33410641","PACLITAXEL","PACLITAXEL KEMEX 100 MG"),
+  r("33410638","33410639","PACLITAXEL","PACLITAXEL KEMEX 150 MG"),
+  r("30890918","30890919","PACLITAXEL ALBUMINA","TAYCOVIT A"),
+  r("30890913","30890916","PACLITAXEL + ALBUMINA","ABRAXANE 100MG INY"),
+  r("10361206","10361208","PAMIDRONATO DISODICO","AMINOMUX 30 MG INY.LIOF.F.A.X 1"),
+  r("10361205","10361207","PAMIDRONATO DISODICO","AMINOMUX 90 MG INY.LIOF.F.A.X 1"),
+  r("30540105","30540106","PANITUMUMAB IV","VECTIBIX 100 MG X 5ML"),
+  r("33412108","33412109","PEGASPARGASA","ONCASPAR PVO.P/SOL.INY.VIAL X 1"),
+  r("10773616","10773617","PEGFILGRASTIM","PEG NEUTROPINE PA 6MG JGA.PRELL."),
+  r("30700204","30700205","PEMBROLIZUMAB","KEYTRUDA ENVASE 100 MG VIAL X 2"),
+  r("30663415","30663417","PEMETREXED","PEMETREXED 500 GP FARM"),
+  r("30280138","30280139","PEMETREXED","PEMETREXED 500 KEMEX FCO AMP"),
+  r("30700118","30700119","PERTUZUMAB","PERJETA 420 mg/14 ml a.x 1"),
+  r("30700218","30700219","PERTUZUMAB + TRASTUZUMAB SC","PHESGO 1200/600MG VIAL X1 X15ML"),
+  r("30700214","30700215","PERTUZUMAB + TRASTUZUMAB SC","PHESGO 600/600 VIAL X 10 ML"),
+  r("10773612","10773615","PLERIZAFOR","REVIXIL 20 MG X 1"),
+  r("30700126","30700127","RAMUCIRUMAB","CYRAMZA 500 MG 10 MG/ML F.A.X 1 X 50 ML"),
+  r("10706304","10706305","RITUXIMAB SC","MABTHERA SC 1400 mg/11.7 ml vial x 1"),
+  r("10706327","10706328","RITUXIMAB IV","NOVEX 100 MG VIAL ENV X 1 AMP"),
+  r("10706308","10706309","RITUXIMAB IV","NOVEX 500 MG VIAL x 1"),
+  r("10706321","10706322","RITUXIMAB IV","RUXIENCE 100 mg/10 ml f.a x 2"),
+  r("10706323","10706324","RITUXIMAB IV","RUXIENCE 500 MG VIAL"),
+  r("10706331","10706332","RITUXIMAB IV","TRUXIMA 100 mg/10 ml f.a x 2"),
+  r("10706333","10706334","RITUXIMAB IV","TRUXIMA 500 mg/50 ml f.a x 1"),
+  r("10742808","10742810","SECUKINUMAB","COSENTYX 150MG/1ML AUTOINY X 1"),
+  r("10742811","10742812","SECUKINUMAB","COSENTYX 300MG/2ML AUTOINY X 1"),
+  r("10220007","10220008","SOMATOTROFINA","NORDITROPIN FLEXPRO 15 MG X 1"),
+  r("10041001","10041002","TOXINA BOTULINICA","BOTOX 100UI AMP"),
+  r("30890907","30890912","TRABECTEDINA","YONDELIS 1 MG FCO AMP"),
+  r("30700101","30700105","TRASTUZUMAB","HERCEPTIN 440 MG X 50 ML AMP"),
+  r("30700154","30700155","TRASTUZUMAB","HERCEPTIN SC 600 mg/5 ml vial x 1"),
+  r("30700185","30700186","TRASTUZUMAB","TRAZIMERA 440 mg f.a. x 1+ solv."),
+  r("30700181","30700184","TRASTUZUMAB","TUZEPTA 440 mg f.a. x 1+ solv."),
+  r("30700120","30700121","TRASTUZUMAB EMTANSINA","KADCYLA 100 MG X 1 VIAL x 1"),
+  r("30700132","30700164","TRASTUZUMAB EMTANSINA","KADCYLA 160 MG X 1 VIAL x 1"),
+  r("10774801","10774802","TRIPTORELINA","DECAPEPTYL RETARD IM 3.75 MG KIT"),
+  r("30920102","30920103","TRIPTORELINA","DECAPEPTYL RETARD IM 11.25 MG KIT"),
+  r("40443638","40443639","USTEKINUMAB","STELARA 90 MG/1 ML VIAL+J.PRELL"),
+  r("40443640","40443641","USTEKINUMAB","STELARA IV 130MG/26ML VIAL"),
+  r("30700166","30700167","VEDOLIZUMAB","ENTYVIO 300 MG VIAL"),
+  r("30700199","30700200","VEDOLIZUMAB","ENTYVIO SC JGA PRELL"),
+  r("33000303","33000304","VINBLASTINA","VINBLASTINA KEMEX 10MG x 1"),
+  r("33008405","33008406","VINCRISTINA","VINCRISTINA KEMEX 1 MG INY.A.X 1"),
+  r("33008403","33008404","VINCRISTINA","VINCRISTINA LKM 1 MG INY.A.X 1"),
+  r("30572110","30572111","VINORELBINE","VINOREL 10 MG FCO AMP"),
+];
+
+// APSOT extras (sobre BASE_ROWS)
+const APSOT_EXTRA = [
+  r("30700103","30700107","BEVACIZUMAB","AVASTIN 100 MG/4 ML AMP"),
+  r("30700102","30700106","BEVACIZUMAB","AVASTIN 400 MG/16 ML AMP"),
+  r("30280000","30280032","IMATINIB","GLIVEC 100 MG COMP x 60"),
+  r("30280999","30280005","IMATINIB","GLIVEC 400 MG COMP x 30"),
+  r("30280035","30280036","IMATINIB","AGACEL 100 MG COMP x 180"),
+  r("30280033","30280034","IMATINIB","AGACEL 400 MG COMP x 30"),
+  r("30280152","30280153","IMATINIB","TIMAB 100 MG COMP x 180"),
+  r("30280142","30280143","IMATINIB","TIMAB 400 MG COMP x 30"),
+  r("20554801","20554802","ERTAPENEM","INVANZ 1 G"),
+  r("63102612","63102614","PIPERACILINA + TAZOBACTAM","PIPERACILINA TAZOBACTAM DRAWER 4,5 G f.a"),
+  r("10278300","10278317","RANIBIZUMAB","LUCENTIS 1VIAL X 0,23 ML"),
+  r("10706321","10706322","RITUXIMAB IV","RUXIENCE 100 mg/10 ml f.a x 2"),
+  r("10706331","10706332","RITUXIMAB IV","TRUXIMA 100 mg/10 ml f.a x 2"),
+  r("10706333","10706334","RITUXIMAB IV","TRUXIMA 500 mg/50 ml f.a x 1"),
+];
+
+// OMINT tiene % descuento adicional → se representan con cols extra
+// Simplificamos: [droga, marca, codAmb, codInt, pct]
+function ro(ca,ci,d,m,pct){ return [d,m,ca,ci,pct+'%']; }
+const OMINT_ROWS = [
+  ro("30674102","30674103","ACETATO DE LEUPROLIDE","ELIGARD 22.5 MG KIT",60.56),
+  ro("30674104","30674105","ACETATO DE LEUPROLIDE","ELIGARD 45 MG KIT X 1",57.20),
+  ro("30463505","30463506","ACETATO DE LEUPROLIDE","LECTRUM 22,5 ML KIT",57.20),
+  ro("30463502","30463504","ACETATO DE LEUPROLIDE","LECTRUM 3.75 MG KIT",57.20),
+  ro("30463501","30463503","ACETATO DE LEUPROLIDE","LECTRUM 7.5 MG KIT",57.20),
+  ro("10271915","10271916","ACIDO ZOLEDRONICO","ACIDO ZOLEDR.MICROSULES 4 MG AMP",92.35),
+  ro("10015026","10015027","ADALIMUMAB","AMGEVITA 40MG/0.8ML AUTOINY X 2",69.56),
+  ro("10015013","10015014","ADALIMUMAB","HUMIRA AC LAP AUTOINY 0.4ML X 2",77.12),
+  ro("10015015","10015016","ADALIMUMAB","HUMIRA AC LAP AUTOINY 0.8ML X 1",74.97),
+  ro("10750002","10750003","ALFILIBERCEPT","EYLIA 40 mg/ml",35.00),
+  ro("10559901","10559902","APREPITANT","EMEND TRIPACK CAPS.X 1+CAPS.X2",46.19),
+  ro("30700147","30700148","ATEZOLIZUMAB","TECENTRIQ 1200mg vial x 1 x 20 ml",38.88),
+  ro("30700188","30700189","ATEZOLIZUMAB","TECENTRIQ 840 mg vial x 1 x 14 ml",38.88),
+  ro("30280082","30280083","AZACITIDINA","AZAMEX 100 mg f.a.x 1",93.83),
+  ro("30280058","30280059","AZACITIDINA","AZZA 100 mg iny.liof.f.a.x 1",92.39),
+  ro("30280166","30280167","AZACITIDINA","AZACITIDINA LKM 100 MG AMP",93.35),
+  ro("11154501","11154502","BACILO DE CALMETTE GUERIN","BCG CULTIVO SSI FCO AMP X 4",48.03),
+  ro("11154503","11154504","BACILO DE CALMETTE GUERIN","CARCIVAC FCO AMP",44.16),
+  ro("10276906","10276907","BELATACEPT","NULOJIX 250mg/vial pvo.liof.x 1",42.46),
+  ro("30280158","30280159","BENDAMUSTINA","BENDAMUSTINA KEMEX 100 MG FAMP",91.20),
+  ro("30280156","30280157","BENDAMUSTINA","BENDAMUSTINA MICROSULES 100 MG FAMP",91.20),
+  ro("30280154","30280155","BENDAMUSTINA","BENDAMUSTINA MICROSULES 25 MG FAMP",91.20),
+  ro("30280004","30280007","BENDAMUSTINA","BENDAMUSTINA VARIFARMA 100 MG FAMP",91.20),
+  ro("30280012","30280013","BENDAMUSTINA","BENDAMUSTINA VARIFARMA 25 MG FAMP",91.20),
+  ro("30700103","30700107","BEVACIZUMAB","AVASTIN 100 MG/4 ML AMP",49.92),
+  ro("30700102","30700106","BEVACIZUMAB","AVASTIN 400 MG/16 ML AMP",49.92),
+  ro("30700156","30700157","BEVACIZUMAB","BEVAX 100 mg vial x 1 x 4 ml",84.07),
+  ro("30700158","30700159","BEVACIZUMAB","BEVAX 400 mg vial x 1 x 16 ml",84.07),
+  ro("30700208","30700209","BEVACIZUMAB","ZIRAVEB 100 mg/4 ml a.x 1",75.08),
+  ro("30700210","30700211","BEVACIZUMAB","ZIRAVEB 400 mg/16 ml a.x 1",75.08),
+  ro("30360403","30360404","BLEOMICINA","BLEOMICINA SULF IVAX 15 U FCO AMP",44.09),
+  ro("30440103","30440104","BORTEZOMIB","BORATER 3.5 mg f.a.x 1",93.69),
+  ro("30440117","30440118","BORTEZOMIB","BORTMEX 3.5 MG INY",93.41),
+  ro("30440107","30440108","BORTEZOMIB","GYSATY 3.5 mg f.a.x 1",94.64),
+  ro("30700180","30700182","BRENTUXIMAB VEDOTIN","ADCETRIS 50 MG FCO AMP",38.40),
+  ro("31850111","31850112","BUSULFAN","BUSULFAN 60 mg f.a.x 8 x 10 ml",57.60),
+  ro("30760310","30760311","CABAZITAXEL","BLACKXELL 60 MG F/A",90.43),
+  ro("30760305","30760306","CABAZITAXEL","CABAZIL FA 1.5ML + DILUY",90.43),
+  ro("33003308","33003309","CARBOPLATINO","CARBOPLATINO 150 MG KEMEX F.A",86.97),
+  ro("33003306","33003307","CARBOPLATINO","CARBOPLATINO 150 MG MICROSULES F.A",81.00),
+  ro("33003302","33003303","CARBOPLATINO","CARBOPLATINO 450 MG TEVA FCO AMP",82.56),
+  ro("35570705","35570706","CARBOPLATINO","CARBOPLATINO GLENMARK 150 MG INY.",82.56),
+  ro("35570713","35570714","CARBOPLATINO","CARBOPLATINO GLENMARK 450 MG INY.",82.56),
+  ro("30771104","30771105","CARBOPLATINO","CARBOPLATINO 150MG TUTEUR LIOF",85.03),
+  ro("33003310","33003311","CARBOPLATINO","CARBOPLATINO 450 MG KEMEX F.A",86.97),
+  ro("33003304","33003305","CARBOPLATINO","CARBOPLATINO 450 MG MICROSULES F.A",85.03),
+  ro("30890605","30890609","CARBOPLATINO","CARBOPLATINO LKM 150 MG",85.21),
+  ro("30280118","30280119","CARFILZOMIB","ALCAF 60 MG",89.28),
+  ro("30280108","30280109","CARFILZOMIB","CARFIZOL FAMP",91.74),
+  ro("30280110","30280111","CARFILZOMIB","FILZOCAR 60 MG TUTEUR",87.36),
+  ro("30540102","30540104","CETUXIMAB","ERBITUX X 1 VIAL X 100 ML",43.04),
+  ro("30540101","30540103","CETUXIMAB","ERBITUX X 1 VIAL X 20 ML",43.04),
+  ro("33410301","33410303","CICLOFOSFAMIDA","CICLOFOSFAMIDA 1 GR FAMP GP PHARM",74.81),
+  ro("33000701","33000702","CICLOFOSFAMIDA","CICLOFOSFAMIDA 200 MG FA GPPHARM",74.88),
+  ro("31550204","31550205","CICLOFOSFAMIDA","CICLOFOSFAMIDA LKM 1GR FA",75.21),
+  ro("33410305","33410306","CICLOFOSFAMIDA","CICLOFOSFAMIDA MICROSULES 1GR",74.17),
+  ro("33410307","33410308","CICLOFOSFAMIDA","CICLOFOSFAMIDA MICROSULES 200 MG",75.34),
+  ro("33008902","33008903","CISPLATINO","CISPLATINO 10 MG FCO AMP TUTEUR",57.60),
+  ro("33008905","33008906","CISPLATINO","CISPLATINO 50 MG FCO AMP TUTEUR",62.74),
+  ro("30890517","30890518","CISPLATINO","CISPLATINO 50 MG KEMEX AMP",64.19),
+  ro("30890511","30890512","CISPLATINO","CISPLATINO 50 MG MICROSULES AMP",65.91),
+  ro("33015009","33015010","CITARABINA","CITARABINA MICROSULES 100 MG FA",69.73),
+  ro("33015003","33015004","CITARABINA","CITARABINA MICROSULES 1000 MG FA",69.73),
+  ro("11550105","11550106","DACARBAZINA","DACARBAZINA VARIFARMA 200 MG AMP.",67.65),
+  ro("11550101","11550103","DACARBAZINA","ONCOCARBIL 200 MG INY.LIOF.F.A.X 1",74.26),
+  ro("30700150","30700153","DARATUMUMAB","DARZALEX 100 MG/5 ML x 1",38.40),
+  ro("30700151","30700152","DARATUMUMAB","DARZALEX 400 MG/20 ML x 1",38.40),
+  ro("30700216","30700215","DARATUMUMAB","DARZALEX SC 1800 MG/15 ML",38.40),
+  ro("30822112","30822113","DECITABINA","SIGNUM 50 ML FCO.AMP x 1",91.49),
+  ro("30822105","30822109","DECITABINE","DETAVI 50MG AMP",90.53),
+  ro("35570318","35570319","DEGARELIX","FIRMAGON 120MG FA X 2",38.40),
+  ro("35570306","35570311","DEGARELIX","FIRMAGON 80MG FA",38.40),
+  ro("10015005","10015007","DENOSUMAB","PROLIA 60 MG/ML JGA PRELL",33.60),
+  ro("30700139","30700140","DENOSUMAB","XGEVA 70MG/ML INY",43.20),
+  ro("30892023","30892024","DOCETAXEL","DOCETAXEL 20 MG KEMEX FAMP",90.63),
+  ro("33410659","33410660","DOCETAXEL","DOCETAXEL 20MG AMP MICROSULES",90.39),
+  ro("33410661","33410662","DOCETAXEL","DOCETAXEL 80 MG AMP MICROSULES",92.79),
+  ro("30892025","30892026","DOCETAXEL","DOCETAXEL 80 MG KEMEX FAMP",90.63),
+  ro("10382935","10382936","DOSTARLIMAB","JEMPERLI 50MG x 10 ML",44.16),
+  ro("30890410","30890411","DOXORUBICINA","DOXORUBICINA 10 MG MICROSULES AMP",74.57),
+  ro("30364507","30364508","DOXORUBICINA","DOXORUBICINA 50 MG MICROSULES AMP",74.72),
+  ro("30675200","30675201","DOXORUBICINA","DOXORUBICINA LIPOSOMAL 20 MG INY RAFFO",72.96),
+  ro("30890920","30890921","DURVALUMAB","IMFINZI 120 MG VIAL X 2.4 ML x 1",33.60),
+  ro("30890914","30890917","DURVALUMAB","IMFINZI 500 MG VIAL X 10 ML x 1",33.60),
+  ro("30892109","30892110","EPIRUBICINA","EPIRUBICINA 50 MG IMA INY",63.36),
+  ro("30700193","30700194","ERIBULINA MASILATO","ELEFIX VIAL X 1 X 2 ML",54.28),
+  ro("10773303","10773307","ERITROPOYECTINA","HEMAX 10.000 UI FCO AMP",64.58),
+  ro("10773310","10773311","ERITROPOYECTINA","HEMAX 40.000 UI FCO AMP",55.58),
+  ro("30890110","30890111","ETOPOSIDO","ETOPOSIDO MICROSULES 100 MG INY",75.14),
+  ro("10773610","10773611","FILGRASTIM","FILGEN 300 MCG JGA.PRELL.X 5",79.23),
+  ro("10773602","10773603","FILGRASTIM","NEUTROMAX 30 MUI (300 MCG) F.A.X 5",78.74),
+  ro("10773601","10773606","FILGRASTIM","NEUTROMAX 48 MUI (480 MCG) AMP X 5",78.74),
+  ro("30701104","30701105","FLUOROURACILO","FLUOROURACILO KEMEX 500 MG FCO AMP",79.64),
+  ro("33000203","33000210","FLUOROURACILO","FLUOROURACILO MICROSULES 500MG INY",84.60),
+  ro("10559903","10559904","FOSAPREPITANT","EMEND IV VIAL 150 MG",36.48),
+  ro("33410656","33410657","GEMCITABINA","GEMCITABINA 1 GR GP PHARM F.AMP",91.39),
+  ro("30662014","30662015","GEMCITABINA","GEMCITABINA 1 GR KEMEX F.AMP.",86.99),
+  ro("33410655","33410658","GEMCITABINA","GEMCITABINA 200 MG GP PHARM F.AMP.",91.20),
+  ro("30662012","30662013","GEMCITABINA","GEMCITABINA 200 MG KEMEX F.AMP.",86.99),
+  ro("10421401","10421405","GOSERELIN","ZOLADEX 3.6 MG INY",62.29),
+  ro("10421402","10421406","GOSERELIN","ZOLADEX LA 10.8 MG INY",62.29),
+  ro("10252538","10252548","HIERRO","FERINJECT INY",39.11),
+  ro("31180201","31180202","IFOSFAMIDA","IFOSFAMIDA 1 GR MICROSULES",74.91),
+  ro("30280035","30280036","IMATINIB","AGACEL 100 MG COMP x 180",88.32),
+  ro("30280033","30280034","IMATINIB","AGACEL 400 MG COMP x 30",88.32),
+  ro("30280000","30280032","IMATINIB","GLIVEC 100 MG COMP x 60",39.36),
+  ro("30280999","30280005","IMATINIB","GLIVEC 400 MG COMP x 30",39.36),
+  ro("30280152","30280153","IMATINIB","TIMAB 100 MG COMP x 180",87.36),
+  ro("30280142","30280143","IMATINIB","TIMAB 400 MG COMP x 30",88.32),
+  ro("10315011","10315012","INFLIXIMAB","IXIFI 100 MG AMP x 1",66.25),
+  ro("10450813","10450817","INMUNOGLOBULINA HUMANA","CIELDOM 5 GR FA X 100 ML",65.00),
+  ro("10450810","10450818","INMUNOGLOBULINA HUMANA","PRIVIGEN 5 GR FA 50 ML",65.00),
+  ro("30700110","30700111","IPILIMUMAB","YERVOY 50 mg/10 ml vial x 1",62.29),
+  ro("10840420","10840421","IRINOTECAN","IRINOTECAN GLENMARK 100 MG FA",90.24),
+  ro("10840410","10840411","IRINOTECAN","IRINOTECAN KEMEX 100 MG FA",90.24),
+  ro("10840414","10840415","IRINOTECAN","IRINOTECAN MICROSULES 100 MG FCOAMP",90.24),
+  ro("30700177","30700212","ISATUXIMAB","SARCLISA 100 MG FCO AMP",43.04),
+  ro("30700178","30700213","ISATUXIMAB","SARCLISA 500 MG FCO AMP",43.04),
+  ro("33410103","33410104","LEUCOVORINA","LEUCOCALCIN 15 MG COMP",83.60),
+  ro("30890306","30890307","LEUCOVORINA CALCICA","LEUCOVORINA 50 MG TUTEUR AMP",81.60),
+  ro("10773620","10773621","LIPEGFILGRASTIM","LONQUEX 6 MG JGA PRELL X 1",78.72),
+  ro("31890004","31890005","MELFALANO INYECTABLE","MELFALAN FRIMIRT 50 MG IV",57.84),
+  ro("30490203","30490204","MEPREDNISONA","DELTISONA B 40 MG COMP.X 20",51.18),
+  ro("33015107","33015109","METOTREXATO","METOTREXATO 1000 MG FAMP MICROSULES",78.19),
+  ro("33015113","33015114","METOTREXATO","METOTREXATO 50 MG FAMP MICROSULES",78.19),
+  ro("33015108","33015109","METOTREXATO","METOTREXATO 500 MG FAMP MICROSULES",78.19),
+  ro("30891608","30891609","MITOMICINA","MITOMICINA C 20 MG F AMP MICROSULES",84.33),
+  ro("30700201","30700202","NATALIZUMAB","TYSABRI 150 MG/ML JER.PRELL. X 2",40.32),
+  ro("30700116","30700117","NATALIZUMAB","TYSABRI 300 mg/15 ml vial x 1",40.32),
+  ro("10450113","10450114","NETUPITANT","AKYNZEO",38.50),
+  ro("30700135","30700136","NIVOLUMAB","OPDIVO 100 mg/10 ml vial x 1",59.37),
+  ro("30700133","30700134","NIVOLUMAB","OPDIVO 40 mg/4 ml vial x 1",59.37),
+  ro("30700206","30700207","NIVOLUMAB","OPDIVO 240MG/24ML",59.37),
+  ro("30700174","30700190","OBINUTUZUMAB","GAZYVA 1000 MG / 40 ML VIAL",40.32),
+  ro("30700149","30700183","OCRELIZUMAB","OCREVUS 300 mg/10 ml vial x 1",42.24),
+  ro("10742805","10742807","OCTREOTIDA","SANDOSTATIN LAR 20 MG JGA PRE x 1",37.44),
+  ro("10742803","10742804","OCTREOTIDA","SANDOSTATIN LAR 30 MG JGA PRE x 1",37.44),
+  ro("10278201","10278202","OMALIZUMAB","XOLAIR 150 MG FAMP X 1",30.19),
+  ro("10278203","10278204","OMALIZUMAB","XOLAIR 150 MG JGA PRELL X 1",30.19),
+  ro("10391803","10391804","ONDANSETRON","ONDANSETRON FRESENIUS 8 MG AMPOLLAS",85.32),
+  ro("13005203","13005204","ONDANSETRON","ONDANSETRON LKM 8 MG COMP.X 10",85.32),
+  ro("30890707","30890708","OXALIPLATINO","OXALIPLATINO KEMEX 100MG INY",89.28),
+  ro("35570217","35570218","OXALIPLATINO","OXALIPLATINO MICROSULES 100MG INY",89.28),
+  ro("30890709","30890710","OXALIPLATINO","OXALIPLATINO 50 MG KEMEX INY",89.28),
+  ro("35570215","35570216","OXALIPLATINO","OXALIPLATINO MICROSULES 50MG INY",89.28),
+  ro("33410640","33410641","PACLITAXEL","PACLITAXEL KEMEX 100 MG",92.39),
+  ro("33410638","33410639","PACLITAXEL","PACLITAXEL KEMEX 150 MG",92.60),
+  ro("30890918","30890919","PACLITAXEL ALBUMINA","TAYCOVIT A",40.32),
+  ro("30890913","30890916","PACLITAXEL + ALBUMINA","ABRAXANE 100MG INY",37.01),
+  ro("10361206","10361208","PAMIDRONATO DISODICO","AMINOMUX 30 MG INY.LIOF.F.A.X 1",38.40),
+  ro("10361205","10361207","PAMIDRONATO DISODICO","AMINOMUX 90 MG INY.LIOF.F.A.X 1",38.40),
+  ro("30540105","30540106","PANITUMUMAB IV","VECTIBIX 100 MG X 5ML",69.75),
+  ro("33412108","33412109","PEGASPARGASA","ONCASPAR PVO.P/SOL.INY.VIAL X 1",29.76),
+  ro("10773616","10773617","PEGFILGRASTIM","PEG NEUTROPINE PA 6MG JGA.PRELL.",79.59),
+  ro("30700204","30700205","PEMBROLIZUMAB","KEYTRUDA ENVASE 100 MG VIAL X 2",49.26),
+  ro("30663415","30663417","PEMETREXED","PEMETREXED 500 GP FARM",93.39),
+  ro("30280138","30280139","PEMETREXED","PEMETREXED 500 KEMEX FCO AMP",93.39),
+  ro("30700118","30700119","PERTUZUMAB","PERJETA 420 mg/14 ml a.x 1",34.56),
+  ro("30700171","30700172","PERTUZUMAB + TRASTUZUMAB SC","PERJETA-HERCEPTIN COMBO PACK",41.28),
+  ro("30700218","30700219","PERTUZUMAB + TRASTUZUMAB SC","PHESGO 1200/600MG VIAL X1 X15ML",42.24),
+  ro("30700214","30700215","PERTUZUMAB + TRASTUZUMAB SC","PHESGO 600/600 VIAL X 10 ML",42.24),
+  ro("10993612","10993615","PLERIZAFOR","REVIXIL 20 MG X 1",84.48),
+  ro("30700126","30700127","RAMUCIRUMAB","CYRAMZA 500 MG 10 MG/ML F.A.X 1 X 50 ML",39.36),
+  ro("10278300","10278317","RANIBIZUMAB","LUCENTIS 1VIAL X 0,23 ML",37.00),
+  ro("10706304","10706305","RITUXIMAB SC","MABTHERA SC 1400 mg/11.7 ml vial x 1",44.16),
+  ro("10706327","10706328","RITUXIMAB IV","NOVEX 100 MG VIAL ENV X 1 AMP",79.40),
+  ro("10706308","10706309","RITUXIMAB IV","NOVEX 500 MG VIAL x 1",85.64),
+  ro("10706321","10706322","RITUXIMAB IV","RUXIENCE 100 mg/10 ml f.a x 2",68.93),
+  ro("10706323","10706324","RITUXIMAB IV","RUXIENCE 500 MG VIAL",68.93),
+  ro("10706331","10706332","RITUXIMAB IV","TRUXIMA 100 mg/10 ml f.a x 2",68.93),
+  ro("10706333","10706334","RITUXIMAB IV","TRUXIMA 500 mg/50 ml f.a x 1",68.93),
+  ro("10742808","10742810","SECUKINUMAB","COSENTYX 150MG/1ML AUTOINY X 1",36.88),
+  ro("10742811","10742812","SECUKINUMAB","COSENTYX 300MG/2ML AUTOINY X 1",36.88),
+  ro("10220007","10220008","SOMATOTROFINA","NORDITROPIN FLEXPRO 15 MG X 1",42.61),
+  ro("10041001","10041002","TOXINA BOTULINICA","BOTOX 100UI AMP",54.72),
+  ro("30890907","30890912","TRABECTEDINA","YONDELIS 1 MG FCO AMP",39.36),
+  ro("30700101","30700105","TRASTUZUMAB","HERCEPTIN 440 MG X 50 ML AMP",55.68),
+  ro("30700154","30700155","TRASTUZUMAB","HERCEPTIN SC 600 mg/5 ml vial x 1",55.68),
+  ro("30700185","30700186","TRASTUZUMAB","TRAZIMERA 440 mg f.a. x 1+ solv.",71.14),
+  ro("30700181","30700184","TRASTUZUMAB","TUZEPTA 440 mg f.a. x 1+ solv.",67.73),
+  ro("30700120","30700121","TRASTUZUMAB EMTANSINA","KADCYLA 100 MG X 1 VIAL x 1",39.36),
+  ro("30700132","30700164","TRASTUZUMAB EMTANSINA","KADCYLA 160 MG X 1 VIAL x 1",39.36),
+  ro("10774801","10774802","TRIPTORELINA","DECAPEPTYL RETARD IM 3.75 MG KIT",37.01),
+  ro("30920102","30920103","TRIPTORELINA","DECAPEPTYL RETARD IM 11.25 MG KIT",37.01),
+  ro("40443638","40443639","USTEKINUMAB","STELARA 90 MG/1 ML VIAL+J.PRELL",35.52),
+  ro("40443640","40443641","USTEKINUMAB","STELARA IV 130MG/26ML VIAL",35.52),
+  ro("30700166","30700167","VEDOLIZUMAB","ENTYVIO 300 MG VIAL",51.17),
+  ro("30700199","30700200","VEDOLIZUMAB","ENTYVIO SC JGA PRELL",51.17),
+  ro("33000303","33000304","VINBLASTINA","VINBLASTINA KEMEX 10MG x 1",30.72),
+  ro("33008405","33008406","VINCRISTINA","VINCRISTINA KEMEX 1 MG INY.A.X 1",77.15),
+  ro("33008403","33008404","VINCRISTINA","VINCRISTINA LKM 1 MG INY.A.X 1",79.07),
+  ro("30572110","30572111","VINORELBINE","VINOREL 10 MG FCO AMP",21.12),
+  ro("20332501","20332502","ANFOTERICINA B","ANFOTERICNA B FADA AMP",20.00),
+  ro("30313618","30313622","POSACONAZOL","NAXOFIL SUSP. ORAL X 105 ML",20.00),
+  ro("20632801","—","VORICONAZOL","V FEND 200 MG AMP PFIZER",20.00),
+  ro("20632812","—","VORICONAZOL","200 MG COMP SANDOZ",20.00),
+  ro("20334301","20334302","PIPERACILINA+TAZOBACTAM","PIPERACILINA+TAZOBACTAM 4,5 FADA",20.00),
+  ro("63102612","63102614","PIPERACILINA+TAZOBACTAM","PIPERACILINA+TAZOBACTAM 4,5 DRAWER",20.00),
+  ro("10190104","10190107","PIPERACILINA+TAZOBACTAM","PIPERACILINA+TAZOBACTAM 4,5 BAGO",20.00),
+  ro("20111801","20111802","VANCOMICINA","VANCOMICINA 500 MG KLONAL FCO AMP",20.00),
+  ro("20330101","20330102","VANCOMICINA","VANCOMICINA 500 MG FADA FCO AMP",20.00),
+  ro("20632811","20632817","CEFTAZIDIMA+AVIBACTAM","ZAVICEFTA 2GR / 0,5G FCO AMP",20.00),
+  ro("11230302","11230303","MEROPENEM","MEROPENEM 1 GR NORTHIA INY",20.00),
+  ro("20335004","20335005","MEROPENEM","MEROPENEM 1 GR FABRA INY",20.00),
+  ro("20335002","20335003","MEROPENEM","MEROPENEM 1 GR FADA INY",20.00),
+  ro("10782605","—","ANIDULAFUNGINA","ANIDULAFUNGINA ECALTA 100 MG FCO AMP",20.00),
+];
+
+// PODER_JUD tiene ENHERTU extra
+const PODER_JUD_ROWS = [...BASE_ROWS,
+  r("30700197","30700198","TRASTUZUMAB","ENHERTU"),
+];
+
+// SEMPRE tiene vigencias por fila → cols [droga, marca, cod, vigencia]
+// Simplificamos igual que BASE pero con columna Vigencia
+const SEMPRE_ROWS = BASE_ROWS.map(x => [...x, "Apr 2025+"]);
+
+// ── OSDE: filas de alto costo ────────────────────────────────
+const OSDE_ALTO_ROWS = [
+      ["ATEZOLIZUMAB","TECENTRIQ 840 mg vial x 1 x 14 ml","Sí"],
+      ["ATEZOLIZUMAB","TECENTRIQ 1200 mg vial x 1 x 20 ml","Sí"],
+      ["AZACITIDINA","AZAMEX 100 mg f.a.x 1","No"],
+      ["AZACITIDINA","AZZA 100 mg iny.liof.f.a.x 1","No"],
+      ["BELATACEPT","NULOJIX 250mg/vial pvo.liof.x 1","No"],
+      ["BEVACIZUMAB","BEVAX 400 mg vial x 1 x 16 ml","Sí"],
+      ["BEVACIZUMAB","BEVAX 100 mg vial x 1 x 4 ml","Sí"],
+      ["BORTEZOMIB","BORATER 3.5 mg f.a.x 1","No"],
+      ["BORTEZOMIB","BORTMEX 3.5 mg f.a.x 1","No"],
+      ["BRENTUXIMAB","ADCETRIS 50 mg vial x 1","Sí"],
+      ["CABAZITAXEL","CABAZIL FA 1.5ML + DILUY","Sí"],
+      ["CABAZITAXEL IV","BLACKXELL 60 MG FCO AMP","Sí"],
+      ["CETUXIMAB","ERBITUX vial x 20 ml","Sí"],
+      ["CETUXIMAB","ERBITUX vial x 100 ml","Sí"],
+      ["DARATUMUMAB","DARZALEX 100 MG/5 ML VIAL X 1","Sí"],
+      ["DARATUMUMAB","DARZALEX 400 MG/20 ML VIAL X 1","Sí"],
+      ["DECITABINE","DETAVI 50 MG AMPOLLAS","Sí"],
+      ["DENOSUMAB","XGEVA 120mg/1.7 ml iny.vial x1","Sí"],
+      ["DURVALUMAB","IMFINZI 120 MG VIAL X 1 X 2.4 ML","Sí"],
+      ["DURVALUMAB","IMFINZI 500 MG VIAL X 1 X 10 ML","Sí"],
+      ["ERIBULINA","ELEFIX VIAL X 1 X 2 ML","Sí"],
+      ["INFLIXIMAB","IXIFI 100 MG F.A.X 1","Sí"],
+      ["IPILIMUMAB","YERVOY 50 mg/10 ml vial x 1","Sí"],
+      ["ISATUXIMAB","SARCLISA 500 MG FCO AMP","Sí"],
+      ["ISATUXIMAB","SARCLISA 100 MG FCO AMP","Sí"],
+      ["ISAVUCONAZOL","CRESEMBA 200 MG F.A X 1","No"],
+      ["ISAVUCONAZOL","CRESEMBA 100 MG CAPS","No"],
+      ["LEUPROLIDE","ELIGARD 22.5 MG KIT","Sí"],
+      ["LEUPROLIDE","ELIGARD 45 MG KIT","Sí"],
+      ["LEUPROLIDE ACETATO","LECTRUM 22,5 ML KIT","Sí"],
+      ["NAB PACLITAXEL","TAYCOVIT A","Sí"],
+      ["NATALIZUMAB","TYSABRI 150 MG/ML JER.PRELL. X 2","Solo 1era vez"],
+      ["NATALIZUMAB","TYSABRI 300 mg/15 ml vial x 1","Solo 1era vez"],
+      ["NIVOLUMAB","OPDIVO 40 mg/4 ml vial x 1","Sí"],
+      ["NIVOLUMAB","OPDIVO 100 mg/10 ml vial x 1","Sí"],
+      ["OBINUTUZUMAB","GAZYVA 1000 MG / 40 ML VIAL","Sí"],
+      ["OCRELIZUMAB","OCREVUS 300 mg/10 ml vial x 1","Sí"],
+      ["OCTREOTIDA","SANDOSTATIN LAR 20 MG JGA.PRELL.X 1","Sí"],
+      ["OCTREOTIDA","SANDOSTATIN LAR 30 MG JGA.PRELL.X 1","Sí"],
+      ["PANITUMUMAB","VECTIBIX 100 MG X 5ML","Sí"],
+      ["PEGASPARGASA","ONCASPAR PVO.P/SOL.INY.VIAL X 1","Sí"],
+      ["PERTUZUMAB","PERJETA 420 mg/14 ml a.x 1","Sí"],
+      ["PERTUZUMAB+TRASTUZUMAB","PHESGO 1200/600MG VIAL X1 X15ML","Sí"],
+      ["PERTUZUMAB+TRASTUZUMAB","PHESGO 600/600 VIAL X 10 ML","Sí"],
+      ["PLERIXAFOR","REVIXIL 20 MG FA X 1","No"],
+      ["RAMUCIRUMAB","CYRAMZA 100 MG 10 MG/ML F.A.X 1 X 10 ML","Sí"],
+      ["RITUXIMAB","NOVEX 100 mg vial x 1","Sí"],
+      ["RITUXIMAB","NOVEX 500 mg vial x 1","Sí"],
+      ["TOCILIZUMAB","ACTEMRA 200MG/10ML F.A.X 1","Sí"],
+      ["TRABECTEDINA","YONDELIS 1 MG FCO AMP","Sí"],
+      ["TRASTUZUMAB","TRAZIMERA 440 mg f.a. x 1+ solv.","Sí"],
+      ["TRASTUZUMAB EMTANSINA","KADCYLA 100 MG VIAL X 1","Sí"],
+      ["TRASTUZUMAB EMTANSINA","KADCYLA 160 MG VIAL X 1","Sí"],
+      ["VEDOLIZUMAB","ENTYVIO 300 mg vial x 1","Sí"],
+];
+
+// ── OSDE: filas del Anexo Oncológico (Bajo Costo) ────────────
+const OSDE_ONCO_ROWS = [
+      ["ACETATO DE LEUPROLIDE","LECTRUM 22,5 ML KIT","—"],
+      ["ACETATO DE LEUPROLIDE","LECTRUM 3.75 MG KIT","—"],
+      ["ACETATO DE LEUPROLIDE","LECTRUM 7.5 MG KIT","—"],
+      ["ACIDO ZOLEDRONICO","ACIDO ZOLEDR.MICROSULES 4 MG AMP","—"],
+      ["APREPITANT","EMEND TRIPACK CAPS.X 1+CAPS.X2","—"],
+      ["AZACITIDINA","AZAMEX 100 mg f.a.x 1","—"],
+      ["AZACITIDINA","AZACITIDINA LKM 100 MG AMP","—"],
+      ["BACILO DE CALMETTE GUERIN","BCG CULTIVO SSI FCO AMP X 4","—"],
+      ["BACILO DE CALMETTE GUERIN","CARCIVAC FCO AMP","—"],
+      ["BELATACEPT","NULOJIX 250mg/vial pvo.liof.x 1","—"],
+      ["BENDAMUSTINA","BENDAMUSTINA KEMEX 100 MG FAMP","—"],
+      ["BENDAMUSTINA","BENDAMUSTINA MICROSULES 100 MG FAMP","—"],
+      ["BENDAMUSTINA","BENDAMUSTINA MICROSULES 25 MG FAMP","—"],
+      ["BENDAMUSTINA","BENDAMUSTINA VARIFARMA 100 MG FAMP","—"],
+      ["BENDAMUSTINA","BENDAMUSTINA VARIFARMA 25 MG FAMP","—"],
+      ["BORTEZOMIB","BORTMEX 3.5 MG INY","—"],
+      ["BORTEZOMIB","GYSATY 3.5 mg f.a.x 1","—"],
+      ["CABAZITAXEL","BLACKXELL 60 MG F/A","—"],
+      ["CABAZITAXEL","CABAZIL FA 1.5ML + DILUY","—"],
+      ["CARBOPLATINO","CARBOPLATINO 150 MG KEMEX F.A","—"],
+      ["CARBOPLATINO","CARBOPLATINO 150 MG MICROSULES F.A","—"],
+      ["CARBOPLATINO","CARBOPLATINO GLENMARK 150 MG INY.","—"],
+      ["CARBOPLATINO","CARBOPLATINO GLENMARK 450 MG INY.","—"],
+      ["CARBOPLATINO","CARBOPLATINO 150MG TUTEUR LIOF","—"],
+      ["CARBOPLATINO","CARBOPLATINO 450 MG KEMEX F.A","—"],
+      ["CARBOPLATINO","CARBOPLATINO 450 MG MICROSULES F.A","—"],
+      ["CARBOPLATINO","CARBOPLATINO LKM 150 MG","—"],
+      ["CARFILZOMIB","ALCAF 60 MG","—"],
+      ["CARFILZOMIB","CARFIZOL FAMP","—"],
+      ["CARFILZOMIB","FILZOCAR 60 MG TUTEUR","—"],
+      ["CICLOFOSFAMIDA","CICLOFOSFAMIDA LKM 1GR FA","—"],
+      ["CICLOFOSFAMIDA","CICLOFOSFAMIDA MICROSULES 1GR","—"],
+      ["CICLOFOSFAMIDA","CICLOFOSFAMIDA MICROSULES 200 MG","—"],
+      ["CISPLATINO","CISPLATINO 10 MG FCO AMP TUTEUR","—"],
+      ["CISPLATINO","CISPLATINO 50 MG FCO AMP TUTEUR","—"],
+      ["CISPLATINO","CISPLATINO 50 MG KEMEX AMP","—"],
+      ["CISPLATINO","CISPLATINO 50 MG MICROSULES AMP","—"],
+      ["CITARABINA","CITARABINA MICROSULES 100 MG FA","—"],
+      ["CITARABINA","CITARABINA MICROSULES 1000 MG FA","—"],
+      ["DACARBAZINA","DACARBAZINA VARIFARMA 200 MG AMP.","—"],
+      ["DACARBAZINA","ONCOCARBIL 200 MG INY.LIOF.F.A.","—"],
+      ["DECITABINA","SIGNUM 50 ML FCO.AMP x 1","—"],
+      ["DEGARELIX","FIRMAGON 120MG FA X 2","—"],
+      ["DEGARELIX","FIRMAGON 80MG FA","—"],
+      ["DENOSUMAB","PROLIA 60 MG/ML JGA PRELL","—"],
+      ["DENOSUMAB","XGEVA 70MG/ML INY","—"],
+      ["DOCETAXEL","DOCETAXEL 20 MG KEMEX FAMP","—"],
+      ["DOCETAXEL","DOCETAXEL 20MG AMP MICROSULES","—"],
+      ["DOCETAXEL","DOCETAXEL 80 MG AMP MICROSULES","—"],
+      ["DOCETAXEL","DOCETAXEL 80 MG KEMEX FAMP","—"],
+      ["DOSTARLIMAB","JEMPERLI 50MG x 10 ML","—"],
+      ["DOXORUBICINA","DOXORUBICINA 10 MG MICROSULES AMP","—"],
+      ["DOXORUBICINA","DOXORUBICINA 50 MG MICROSULES AMP","—"],
+      ["DOXORUBICINA","DOXORUBICINA LIPOSOMAL 20 MG INY RAFFO","—"],
+      ["EPIRUBICINA","EPIRUBICINA 50 MG IMA INY","—"],
+      ["ERIBULINA MASILATO","ELEFIX VIAL X 1 X 2 ML","—"],
+      ["ERITROPOYECTINA","HEMAX 10.000 UI FCO AMP","—"],
+      ["ETOPOSIDO","ETOPOSIDO MICROSULES 100 MG INY","—"],
+      ["FILGRASTIM","NEUTROMAX 30 MUI (300 MCG) F.A.X 5","—"],
+      ["FILGRASTIM","NEUTROMAX 48 MUI (480 MCG) AMP X 5","—"],
+      ["FLUOROURACILO","FLUOROURACILO MICROSULES 500MG INY","—"],
+      ["FOSAPREPITANT","EMEND IV VIAL 150 MG","—"],
+      ["GEMCITABINA","GEMCITABINA 1 GR KEMEX F.AMP.","—"],
+      ["GEMCITABINA","GEMCITABINA 200 MG KEMEX F.AMP.","—"],
+      ["GOSERELIN","ZOLADEX 3.6 MG INY","—"],
+      ["GOSERELIN","ZOLADEX LA 10.8 MG INY","—"],
+      ["HIERRO","FERINJECT INY","—"],
+      ["IFOSFAMIDA","IFOSFAMIDA 1 GR MICROSULES","—"],
+      ["IMATINIB","AGACEL 100 MG COMP x 180","—"],
+      ["IMATINIB","AGACEL 400 MG COMP x 30","—"],
+      ["IMATINIB","TIMAB 100 MG COMP x 180","—"],
+      ["IMATINIB","TIMAB 400 MG COMP x 30","—"],
+      ["INFLIXIMAB","IXIFI 100 MG AMP x 1","—"],
+      ["INMUNOGLOBULINA HUMANA","NORMALPRIVIGEN 5 GR FA 50 ML","—"],
+      ["IRINOTECAN","IRINOTECAN GLENMARK 100 MG FA","—"],
+      ["IRINOTECAN","IRINOTECAN KEMEX 100 MG FA","—"],
+      ["IRINOTECAN","IRINOTECAN MICROSULES 100 MG FCOAMP","—"],
+      ["LEUCOVORINA CALCICA","LEUCOVORINA 50 MG TUTEUR AMP","—"],
+      ["LIPEGFILGRASTIM","LONQUEX 6 MG JGA PRELL X 1","—"],
+      ["MELFALANO INYECTABLE","MELFALAN FRIMIRT 50 MG IV","—"],
+      ["MEPREDNISONA","DELTISONA B 40 MG COMP.X 20","—"],
+      ["METOTREXATO","METOTREXATO 1000 MG FAMP MICROSULES","—"],
+      ["METOTREXATO","METOTREXATO 50 MG FAMP MICROSULES","—"],
+      ["METOTREXATO","METOTREXATO 500 MG FAMP MICROSULES","—"],
+      ["MITOMICINA","MITOMICINA C 20 MG F AMP MICROSULES","—"],
+      ["NETUPITANT","AKYNZEO","—"],
+      ["OBINUTUZUMAB","GAZYVA 1000 MG / 40 ML VIAL","—"],
+      ["OCTREOTIDA","SANDOSTATIN LAR 20 MG JGA PRE x 1","—"],
+      ["OCTREOTIDA","SANDOSTATIN LAR 30 MG JGA PRE x 1","—"],
+      ["OMALIZUMAB","XOLAIR 150 MG FAMP X 1","—"],
+      ["OMALIZUMAB","XOLAIR 150 MG JGA PRELL X 1","—"],
+      ["OXALIPLATINO","OXALIPLATINO KEMEX 100MG INY","—"],
+      ["OXALIPLATINO","OXALIPLATINO MICROSULES 100MG INY","—"],
+      ["OXALIPLATINO","OXALIPLATINO 50 MG KEMEX INY","—"],
+      ["OXALIPLATINO","OXALIPLATINO MICROSULES 50MG INY","—"],
+      ["PACLITAXEL","PACLITAXEL KEMEX 30 MG","—"],
+      ["PACLITAXEL","PACLITAXEL KEMEX 100 MG","—"],
+      ["PACLITAXEL","PACLITAXEL KEMEX 150 MG","—"],
+      ["PACLITAXEL ALBUMINA","TAYCOVIT A","—"],
+      ["PACLITAXEL + ALBUMINA","ABRAXANE 100MG INY","—"],
+      ["PAMIDRONATO DISODICO","AMINOMUX 30 MG INY.LIOF.F.A.X 1","—"],
+      ["PAMIDRONATO DISODICO","AMINOMUX 90 MG INY.LIOF.F.A.X 1","—"],
+      ["PANITUMUMAB IV","VECTIBIX 100 MG X 5ML","—"],
+      ["PEGASPARGASA","ONCASPAR PVO.P/SOL.INY.VIAL X 1","—"],
+      ["PEMETREXED","PEMETREXED 500 KEMEX FCO AMP","—"],
+      ["PLERIZAFOR","REVIXIL 20 MG X 1","—"],
+      ["RAMUCIRUMAB","CYRAMZA 500 MG 10 MG/ML F.A.","—"],
+      ["RANIBIZUMAB","LUCENTIS 1VIAL X 0,23 ML","—"],
+      ["RITUXIMAB SC","MABTHERA SC 1400 mg/11.7 ml vial x 1","—"],
+      ["RITUXIMAB IV","NOVEX 100 MG VIAL ENV X 1 AMP","—"],
+      ["RITUXIMAB IV","NOVEX 500 MG VIAL x 1","—"],
+      ["SECUKINUMAB","COSENTYX 150MG/1ML AUTOINY X 1","—"],
+      ["SECUKINUMAB","COSENTYX 300MG/2ML AUTOINY X 1","—"],
+      ["SOMATOTROFINA","NORDITROPIN FLEXPRO 15 MG X 1","—"],
+      ["TOXINA BOTULINICA","BOTOX 100UI AMP","—"],
+      ["TRIPTORELINA","DECAPEPTYL RETARD IM 3.75 MG KIT","—"],
+      ["TRIPTORELINA","DECAPEPTYL RETARD IM 11.25 MG KIT","—"],
+      ["VINBLASTINA","VINBLASTINA KEMEX 10MG x 1","—"],
+      ["VINCRISTINA","VINCRISTINA KEMEX 1 MG INY.A.X 1","—"],
+      ["VINCRISTINA","VINCRISTINA LKM 1 MG INY.A.X 1","—"],
+      ["VINORELBINE","VINOREL 10 MG FCO AMP","—"],
+];
+
+const DATA = {
+  MEDICUS: {
+    label: "MEDICUS",
+    periodo: "Feb 2026",
+    columns: ["Droga", "Nombre Comercial"],
+    rows: MEDICUS_ROWS,
+  },
+  OSDE: {
+    label: "OSDE",
+    periodo: "Feb 2026",
+    subsections: [
+      {
+        label: "Alto Costo",
+        subkey: "OSDE_ALTO",
+        periodo: "Feb 2026",
+        columns: ["Droga", "Nombre Comercial", "Auditoría Médica"],
+        rows: OSDE_ALTO_ROWS,
+      },
+      {
+        label: "Anexo Oncológico",
+        subkey: "OSDE_ONCO",
+        periodo: "Mar 2026",
+        columns: ["Droga", "Nombre Comercial"],
+        rows: OSDE_ONCO_ROWS,
+      },
+    ],
+  },
+  SMG: {
+    label: "Swiss Medical (SMG)",
+    periodo: "May 2025",
+    columns: ["Droga", "Nombre Comercial"],
+    rows: [...BASE_ROWS,
+      r("30700147","30700148","ATEZOLIZUMAB","TECENTRIQ 1200mg vial x 1 x 20 ml"),
+      r("30700188","30700189","ATEZOLIZUMAB","TECENTRIQ 840 mg vial x 1 x 14 ml"),
+      r("30700103","30700107","BEVACIZUMAB","AVASTIN 100 MG/4 ML AMP"),
+      r("30700102","30700106","BEVACIZUMAB","AVASTIN 400 MG/16 ML AMP"),
+    ],
+  },
+  APSOT: {
+    label: "APSOT / Techint",
+    periodo: "Abr 2025",
+    columns: ["Droga", "Nombre Comercial"],
+    rows: [...BASE_ROWS, ...APSOT_EXTRA],
+  },
+  ASE_MEDIFE: {
+    label: "MEDIFE",
+    periodo: "Jul 2025",
+    columns: ["Droga", "Nombre Comercial"],
+    rows: [...BASE_ROWS,
+      r("30700103","30700107","BEVACIZUMAB","AVASTIN 100 MG/4 ML AMP"),
+      r("30700102","30700106","BEVACIZUMAB","AVASTIN 400 MG/16 ML AMP"),
+      r("30280000","30280032","IMATINIB","GLIVEC 100 MG COMP x 60"),
+      r("30280999","30280005","IMATINIB","GLIVEC 400 MG COMP x 30"),
+      r("30280035","30280036","IMATINIB","AGACEL 100 MG COMP x 180"),
+      r("30280033","30280034","IMATINIB","AGACEL 400 MG COMP x 30"),
+      r("30280152","30280153","IMATINIB","TIMAB 100 MG COMP x 180"),
+      r("30280142","30280143","IMATINIB","TIMAB 400 MG COMP x 30"),
+      r("10773310","10773311","ERITROPOYECTINA","HEMAX 40.000 UI FCO AMP"),
+    ],
+  },
+  COLEGIO_ESC: {
+    label: "Colegio Escribanos Pcia.",
+    periodo: "Jul 2025",
+    columns: ["Droga", "Nombre Comercial"],
+    rows: [...BASE_ROWS,
+      r("30700103","30700107","BEVACIZUMAB","AVASTIN 100 MG/4 ML AMP"),
+      r("30700102","30700106","BEVACIZUMAB","AVASTIN 400 MG/16 ML AMP"),
+      r("30280000","30280032","IMATINIB","GLIVEC 100 MG COMP x 60"),
+      r("30280999","30280005","IMATINIB","GLIVEC 400 MG COMP x 30"),
+      r("30280035","30280036","IMATINIB","AGACEL 100 MG COMP x 180"),
+      r("30280033","30280034","IMATINIB","AGACEL 400 MG COMP x 30"),
+      r("30280152","30280153","IMATINIB","TIMAB 100 MG COMP x 180"),
+      r("30280142","30280143","IMATINIB","TIMAB 400 MG COMP x 30"),
+    ],
+  },
+  IOSEP: {
+    label: "IASEP Formosa",
+    periodo: "Sep 2025",
+    columns: ["Droga", "Nombre Comercial"],
+    rows: BASE_ROWS.map(x => [x[0],x[1]]),
+  },
+  OMINT: {
+    label: "OMINT",
+    periodo: "Abr 2025",
+    columns: ["Droga", "Nombre Comercial"],
+    rows: OMINT_ROWS,
+  },
+  PODER_JUD: {
+    label: "Poder Judicial",
+    periodo: "Mar 2026",
+    columns: ["Droga", "Nombre Comercial"],
+    rows: PODER_JUD_ROWS,
+  },
+  SEMPRE: {
+    label: "SEMPRE",
+    periodo: "Abr 2025",
+    columns: ["Droga", "Nombre Comercial"],
+    rows: [...BASE_ROWS.map(x=>[x[0],x[1]]),
+      ["ISAVUCONAZOL","CRESEMBA 100 MG CAPS"],
+      ["TIMOGLOBULINA","TIMOGLOBULINA 25 MG FCO AMP"],
+    ],
+  },
+};
+
+// ── RENDER ──────────────────────────────────────────────────
+const collapsed = {};
+
+function buildTable(cols, rows, headColor) {
+  const colsHtml = cols.map(c=>`<th>${c}</th>`).join('');
+  const rowsHtml = rows.map(row => {
+    const cells = row.slice(0, cols.length).map((cell, i) => {
+      if (i === 0) return `<td class="drug-name">${cell}</td>`;
+      if (i === 1) return `<td><span class="brand-tag">${cell}</span></td>`;
+      if (cols[i] === 'Auditoría Médica') {
+        const cls = cell === 'Sí' ? 'badge-si' : cell === 'No' ? 'badge-no' : cell === '—' ? '' : 'badge-special';
+        return cls ? `<td><span class="badge ${cls}">${cell}</span></td>` : `<td class="mono">${cell}</td>`;
+      }
+      return `<td class="mono">${cell}</td>`;
+    }).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+  return `<table><thead><tr style="background:${headColor}">${colsHtml}</tr></thead><tbody>${rowsHtml}</tbody></table>`;
+}
+
+function render() {
+  const osFilter = document.getElementById('filterOS').value;
+  const drug = document.getElementById('filterDrug').value.toLowerCase().trim();
+  const container = document.getElementById('mainContent');
+  container.innerHTML = '';
+
+  let totalRows = 0;
+  const keys = osFilter ? [osFilter] : Object.keys(DATA);
+  let visibleOS = 0;
+
+  keys.forEach(key => {
+    const src = DATA[key];
+    const c = COLORS[key] || { dot:'#666', head:'#eee' };
+    const isOpen = collapsed[key] !== true;
+
+    // ── OSDE con sub-secciones ──
+    if (src.subsections) {
+      // Collect filtered rows per subsection
+      const filteredSubs = src.subsections.map(sub => {
+        const subRows = getSubRows(key, sub.subkey, sub.rows);
+        const subCols = getSubCols(key, sub.subkey, sub.columns);
+        const rows = subRows.filter(row => !drug || row.join(' ').toLowerCase().includes(drug));
+        return { ...sub, filteredRows: rows, activeCols: subCols };
+      }).filter(sub => sub.filteredRows.length > 0);
+
+      if (!filteredSubs.length) return;
+
+      const totalSubRows = filteredSubs.reduce((s, sub) => s + sub.filteredRows.length, 0);
+      visibleOS++;
+      totalRows += totalSubRows;
+
+      const sec = document.createElement('div');
+      sec.className = 'os-section';
+
+      // Build sub-section HTML
+      const subsHtml = filteredSubs.map(sub => {
+        const subIsOpen = collapsed[sub.subkey] !== true;
+        return `
+          <div class="sub-section-header ${subIsOpen?'':'collapsed'}" onclick="toggleSection('${sub.subkey}',this)">
+            <span class="sub-label">${sub.label}</span>
+            <span class="os-periodo">${sub.periodo}</span>
+            <span class="os-count">${sub.filteredRows.length} items</span>
+            <span class="collapse-icon">▼</span>
+          </div>
+          <div class="os-table-wrap ${subIsOpen?'':'hidden'}">
+            ${buildTable(sub.activeCols, sub.filteredRows, c.head)}
+          </div>`;
+      }).join('');
+
+      sec.innerHTML = `
+        <div class="os-section-header ${isOpen?'':'collapsed'}" onclick="toggleSection('${key}',this)">
+          <div class="os-dot" style="background:${c.dot}"></div>
+          <h2 style="color:${c.dot}">${src.label}</h2>
+          <span class="os-periodo">${src.periodo}</span>
+          <span class="os-count">${totalSubRows} items</span>
+          <span class="collapse-icon">▼</span>
+        </div>
+        <div class="os-table-wrap ${isOpen?'':'hidden'}">${subsHtml}</div>`;
+      container.appendChild(sec);
+      return;
+    }
+
+    // ── Entrada normal ──
+    const cols = getCols(key);
+    let rows = getRows(key).filter(row => !drug || row.join(' ').toLowerCase().includes(drug));
+    if (!rows.length) return;
+    visibleOS++;
+    totalRows += rows.length;
+
+    const sec = document.createElement('div');
+    sec.className = 'os-section';
+    sec.innerHTML = `
+      <div class="os-section-header ${isOpen?'':'collapsed'}" onclick="toggleSection('${key}',this)">
+        <div class="os-dot" style="background:${c.dot}"></div>
+        <h2 style="color:${c.dot}">${src.label}</h2>
+        <span class="os-periodo">${src.periodo}</span>
+        <span class="os-count">${rows.length} items</span>
+        <span class="collapse-icon">▼</span>
+      </div>
+      <div class="os-table-wrap ${isOpen?'':'hidden'}">
+        ${buildTable(cols, rows, c.head)}
+      </div>`;
+    container.appendChild(sec);
+  });
+
+  if (!totalRows) {
+    container.innerHTML = '<div class="no-results">No se encontraron resultados para los filtros aplicados.</div>';
+  }
+
+  document.getElementById('statTotal').textContent = totalRows;
+  document.getElementById('statOS').textContent = visibleOS;
+}
+
+function toggleSection(key, header) {
+  collapsed[key] = collapsed[key] !== true;
+  header.classList.toggle('collapsed', collapsed[key]);
+  const wrap = header.nextElementSibling;
+  wrap.classList.toggle('hidden', collapsed[key]);
+}
+
+function clearFilters() {
+  document.getElementById('filterOS').value = '';
+  document.getElementById('filterDrug').value = '';
+  render();
+}
+
+// ── CSV / PDF UPLOAD LOGIC ───────────────────────────────────
+const OS_KEYS = Object.keys(DATA);
+const csvOverrides = {};
+const csvHistory   = {};
+const origPeriodosHistory = {};
+
+const origPeriodos = {
+  MEDICUS:'Feb 2026', SMG:'May 2025', APSOT:'Abr 2025',
+  ASE_MEDIFE:'Jul 2025', COLEGIO_ESC:'Jul 2025', IOSEP:'Sep 2025',
+  OMINT:'Abr 2025', PODER_JUD:'Mar 2026', SEMPRE:'Abr 2025',
+  OSDE_ALTO:'Feb 2026', OSDE_ONCO:'Mar 2026',
+};
+
+function getSubRows(key, subkey, defaultRows) {
+  return csvOverrides[subkey] ? csvOverrides[subkey].rows : defaultRows;
+}
+function getSubCols(key, subkey, defaultCols) {
+  return csvOverrides[subkey] ? csvOverrides[subkey].columns : defaultCols;
+}
+function getRows(key) { return csvOverrides[key] ? csvOverrides[key].rows : DATA[key].rows; }
+function getCols(key) { return csvOverrides[key] ? csvOverrides[key].columns : DATA[key].columns; }
+
+function getUploadSlots() {
+  const slots = [];
+  OS_KEYS.forEach(key => {
+    const src = DATA[key];
+    if (src.subsections) {
+      src.subsections.forEach(sub => {
+        slots.push({ slotKey: sub.subkey, label: `OSDE · ${sub.label}` });
+      });
+    } else {
+      slots.push({ slotKey: key, label: src.label });
+    }
+  });
+  return slots;
+}
+
+function buildUploadGrid() {
+  const grid = document.getElementById('uploadGrid');
+  grid.innerHTML = '';
+  getUploadSlots().forEach(({ slotKey, label }) => {
+    const isLoaded   = !!csvOverrides[slotKey];
+    const hasHistory = csvHistory.hasOwnProperty(slotKey);
+    const slot = document.createElement('div');
+    slot.className = 'upload-slot' + (isLoaded ? ' loaded' : '');
+    slot.id = 'slot-' + slotKey;
+    const undoBtn = hasHistory
+      ? `<button class="slot-undo" onclick="undoUpload(event,'${slotKey}')">↩ Volver a versión anterior</button>`
+      : '';
+    slot.innerHTML = `
+      <div class="upload-slot-name">${label}</div>
+      <div class="upload-slot-status" id="status-${slotKey}">${isLoaded ? '✓ Actualizado' : '+ Cargar archivo'}</div>
+      ${undoBtn}
+      <input type="file" accept=".csv,.txt,.pdf,.xlsx,.xls" onchange="handleFile(event,'${slotKey}')">`;
+    grid.appendChild(slot);
+  });
+}
+
+function toggleUpload() {
+  const body    = document.getElementById('uploadBody');
+  const chevron = document.getElementById('uploadChevron');
+  const header  = document.getElementById('uploadToggle');
+  const isOpen  = body.classList.toggle('open');
+  chevron.classList.toggle('open', isOpen);
+  header.classList.toggle('open', isOpen);
+  if (isOpen) buildUploadGrid();
+}
+
+function handleFile(event, slotKey) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const name = file.name.toLowerCase();
+  if (name.endsWith('.pdf')) handlePDF(file, slotKey);
+  else if (name.endsWith('.xlsx') || name.endsWith('.xls')) handleExcel(file, slotKey);
+  else handleCSV(file, slotKey);
+}
+
+function handleExcel(file, slotKey) {
+  setSlotLoading(slotKey, '⏳ Leyendo Excel...');
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      // Usar la primera hoja
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      // Convertir a array de arrays
+      const rows2d = XLSX.utils.sheet_to_array(sheet, { defval: '' });
+      if (rows2d.length < 2) throw new Error('La hoja Excel tiene menos de 2 filas.');
+
+      // Normalizar encabezados (primera fila no vacía)
+      let headerRowIdx = 0;
+      for (let i = 0; i < Math.min(5, rows2d.length); i++) {
+        if (rows2d[i].some(c => String(c).trim().length > 2)) { headerRowIdx = i; break; }
+      }
+      const rawHeaders = rows2d[headerRowIdx].map(h => String(h).trim().toLowerCase());
+
+      const findCol = (...names) => {
+        for (const n of names) {
+          const idx = rawHeaders.findIndex(h => h.includes(n.toLowerCase()));
+          if (idx >= 0) return idx;
+        }
+        return -1;
+      };
+
+      const iDroga  = findCol('droga','drug','generico','genérico');
+      const iNombre = findCol('nombre medicamento','nombre comercial','medicamento','nombre');
+      const iAudit  = findCol('auditoria','auditoría');
+
+      if (iDroga < 0 || iNombre < 0) {
+        throw new Error(`Columnas no encontradas en el Excel.\nEncabezados detectados: ${rawHeaders.filter(h=>h).join(', ')}\n\nEl archivo debe tener: Droga y Nombre Medicamento (o Nombre Comercial).`);
+      }
+
+      const hasAudit = slotKey === 'OSDE_ALTO' && iAudit >= 0;
+      const columns  = hasAudit ? ["Droga","Nombre Comercial","Auditoría Médica"] : ["Droga","Nombre Comercial"];
+      const rows = [];
+
+      for (let i = headerRowIdx + 1; i < rows2d.length; i++) {
+        const fila = rows2d[i];
+        const droga  = String(fila[iDroga]  || '').trim();
+        const nombre = String(fila[iNombre] || '').trim();
+        if (!droga && !nombre) continue;
+        const row = [droga.toUpperCase(), nombre];
+        if (hasAudit) row.push(String(fila[iAudit] || '—').trim());
+        rows.push(row);
+      }
+
+      if (!rows.length) throw new Error('No se encontraron filas con datos en el Excel.');
+
+      applyOverride(slotKey, { columns, rows }, file.name.replace(/\.(xlsx|xls)$/i, ''));
+    } catch(err) {
+      setSlotLoading(slotKey, '');
+      buildUploadGrid();
+      alert('Error al leer el Excel: ' + err.message);
+    }
+  };
+  reader.onerror = () => { alert('No se pudo leer el archivo.'); };
+  reader.readAsArrayBuffer(file);
+}
+
+function handleCSV(file, slotKey) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = parseCSV(e.target.result, slotKey);
+      if (!parsed.rows.length) { alert('No se encontraron filas válidas en el CSV.'); return; }
+      applyOverride(slotKey, parsed, file.name.replace(/\.(csv|txt)$/i,''));
+    } catch(err) { alert('Error al leer el CSV: ' + err.message); }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseCSV(text, slotKey) {
+  const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l => l.trim());
+  if (lines.length < 2) throw new Error('El archivo tiene menos de 2 líneas.');
+  const sep = lines[0].includes(';') ? ';' : ',';
+  const rawHeaders = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g,'').toLowerCase());
+  const findCol = (...names) => { for (const n of names) { const idx = rawHeaders.findIndex(h => h.includes(n.toLowerCase())); if (idx >= 0) return idx; } return -1; };
+  const iDroga  = findCol('droga','drug','generico','genérico');
+  const iNombre = findCol('nombre medicamento','nombre comercial','medicamento','nombre');
+  const iAudit  = findCol('auditoria','auditoría');
+  if (iDroga < 0 || iNombre < 0) throw new Error(`Columnas no encontradas. Encabezados: ${rawHeaders.join(', ')}`);
+  const hasAudit = slotKey === 'OSDE_ALTO' && iAudit >= 0;
+  const columns  = hasAudit ? ["Droga","Nombre Comercial","Auditoría Médica"] : ["Droga","Nombre Comercial"];
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(sep).map(c => c.trim().replace(/^"|"$/g,''));
+    const droga = cols[iDroga] || '', nombre = cols[iNombre] || '';
+    if (!droga && !nombre) continue;
+    const row = [droga.toUpperCase(), nombre];
+    if (hasAudit) row.push(cols[iAudit] || '—');
+    rows.push(row);
+  }
+  return { columns, rows };
+}
+
+async function handlePDF(file, slotKey) {
+  setSlotLoading(slotKey, '⏳ Leyendo PDF con IA...');
+  const base64 = await fileToBase64(file);
+  const isAlto = slotKey === 'OSDE_ALTO';
+  const prompt = isAlto
+    ? `Extraé todos los medicamentos de este PDF y devolvé ÚNICAMENTE un JSON sin texto adicional:\n{"columns":["Droga","Nombre Comercial","Auditoría Médica"],"rows":[["DROGA","NOMBRE","Sí|No|—"],...]}`
+    : `Extraé todos los medicamentos de este PDF y devolvé ÚNICAMENTE un JSON sin texto adicional:\n{"columns":["Droga","Nombre Comercial"],"rows":[["DROGA","NOMBRE"],...]}`;
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514", max_tokens: 8000,
+        messages: [{ role: "user", content: [
+          { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
+          { type: "text", text: prompt }
+        ]}]
+      })
+    });
+    const data = await response.json();
+    const text = (data.content || []).map(b => b.text || '').join('').trim();
+    let parsed;
+    try { parsed = JSON.parse(text); }
+    catch { const m = text.match(/\{[\s\S]*\}/); if (m) parsed = JSON.parse(m[0]); else throw new Error('JSON inválido en respuesta.'); }
+    if (!parsed.rows || !parsed.rows.length) throw new Error('No se encontraron medicamentos en el PDF.');
+    applyOverride(slotKey, parsed, file.name.replace(/\.pdf$/i, ''));
+  } catch(err) {
+    setSlotLoading(slotKey, '');
+    buildUploadGrid();
+    alert('Error al procesar el PDF: ' + err.message);
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result.split(',')[1]);
+    reader.onerror = () => rej(new Error('No se pudo leer el archivo.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function setSlotLoading(slotKey, msg) {
+  const slot = document.getElementById('slot-' + slotKey);
+  if (!slot) return;
+  if (msg) { slot.classList.add('loading'); slot.classList.remove('loaded'); const st = document.getElementById('status-' + slotKey); if (st) st.textContent = msg; }
+  else { slot.classList.remove('loading'); }
+}
+
+function getCurrentPeriodo(slotKey) {
+  for (const key of OS_KEYS) {
+    const src = DATA[key];
+    if (src.subsections) { const sub = src.subsections.find(s => s.subkey === slotKey); if (sub) return sub.periodo; }
+    else if (key === slotKey) return src.periodo;
+  }
+  return '';
+}
+
+function setPeriodo(slotKey, value) {
+  for (const key of OS_KEYS) {
+    const src = DATA[key];
+    if (src.subsections) { const sub = src.subsections.find(s => s.subkey === slotKey); if (sub) { sub.periodo = value; return; } }
+    else if (key === slotKey) { src.periodo = value; return; }
+  }
+}
+
+function applyOverride(slotKey, parsed, label) {
+  if (csvOverrides[slotKey]) {
+    csvHistory[slotKey] = { ...csvOverrides[slotKey] };
+    origPeriodosHistory[slotKey] = getCurrentPeriodo(slotKey);
+  } else {
+    csvHistory[slotKey] = null;
+    origPeriodosHistory[slotKey] = origPeriodos[slotKey];
+  }
+  csvOverrides[slotKey] = parsed;
+  setPeriodo(slotKey, label);
+  buildUploadGrid();
+  render();
+}
+
+function undoUpload(event, slotKey) {
+  event.stopPropagation();
+  if (csvHistory[slotKey] === null) { delete csvOverrides[slotKey]; }
+  else if (csvHistory[slotKey]) { csvOverrides[slotKey] = csvHistory[slotKey]; }
+  setPeriodo(slotKey, origPeriodosHistory[slotKey] || origPeriodos[slotKey]);
+  delete csvHistory[slotKey];
+  delete origPeriodosHistory[slotKey];
+  buildUploadGrid();
+  render();
+}
+
+render();
+</script>
+</body>
+<footer style="text-align:center; padding: 18px 40px; border-top: 1px solid var(--border);">
+  <span style="font-family:'DM Serif Display',serif; font-size:13px; letter-spacing:0.06em; color:var(--ink-muted); font-style:italic; user-select:none;">
+    by Leandro Carrizo Amendola
+  </span>
+</footer>
+</html>
