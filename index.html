@@ -103,69 +103,52 @@ tbody td { padding: 9px 18px; color: var(--ink); vertical-align: middle; }
 .no-results { text-align: center; padding: 50px 20px; color: var(--ink-muted); font-style: italic; font-size: 15px; }
 .mono { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink-muted); }
 
-/* CSV Upload Panel */
+/* Upload Panel */
 .upload-panel {
-  margin: 0 40px 24px;
+  margin: 0 40px 20px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--surface);
   overflow: hidden;
 }
 .upload-panel-header {
-  display: flex; align-items: center; gap: 10px;
-  padding: 13px 22px; cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 16px; cursor: pointer; user-select: none;
   border-bottom: 1px solid transparent;
   transition: background 0.15s;
 }
 .upload-panel-header:hover { background: var(--surface2); }
 .upload-panel-header.open { border-bottom-color: var(--border); }
 .upload-panel-title {
-  font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.07em;
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.07em;
   text-transform: uppercase; color: var(--ink-muted); font-weight: 500;
 }
-.upload-panel-badge {
-  font-family: 'DM Mono', monospace; font-size: 10px;
-  background: var(--accent); color: white;
-  padding: 2px 8px; border-radius: 20px; margin-left: 6px;
-}
-.upload-chevron { margin-left: auto; font-size: 11px; color: var(--ink-muted); transition: transform 0.2s; }
+.upload-chevron { margin-left: auto; font-size: 10px; color: var(--ink-muted); transition: transform 0.2s; }
 .upload-chevron.open { transform: rotate(180deg); }
-.upload-panel-body { display: none; padding: 20px 22px; }
+.upload-panel-body { display: none; padding: 14px 16px; }
 .upload-panel-body.open { display: block; }
 
-.upload-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.upload-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 12px; }
 .upload-slot {
-  border: 1.5px dashed var(--border); border-radius: 8px;
-  padding: 12px 14px; cursor: pointer; transition: all 0.15s;
+  border: 1.5px dashed var(--border); border-radius: 6px;
+  padding: 8px 12px; cursor: pointer; transition: all 0.15s;
   position: relative; background: var(--bg);
 }
 .upload-slot:hover { border-color: var(--accent); background: var(--accent-light); }
 .upload-slot.loaded { border-style: solid; border-color: #2d6a3f; background: #e3f0e8; }
 .upload-slot-name {
-  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.05em;
-  text-transform: uppercase; color: var(--ink-muted); margin-bottom: 4px;
+  font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--ink-muted); margin-bottom: 2px;
 }
 .upload-slot.loaded .upload-slot-name { color: #2d6a3f; }
-.upload-slot-status { font-size: 12px; color: var(--ink-muted); }
+.upload-slot-status { font-size: 11px; color: var(--ink-muted); }
 .upload-slot.loaded .upload-slot-status { color: #2d6a3f; font-weight: 600; }
 .upload-slot input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
 
 .upload-hint {
-  font-size: 12px; color: var(--ink-muted); line-height: 1.5;
-  border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px;
+  font-size: 11px; color: var(--ink-muted); line-height: 1.4;
+  border-top: 1px solid var(--border); padding-top: 10px; margin-top: 2px;
 }
-.upload-hint strong { color: var(--ink); }
-.upload-hint code {
-  font-family: 'DM Mono', monospace; font-size: 11px;
-  background: var(--surface2); padding: 1px 5px; border-radius: 3px;
-}
-.upload-reset {
-  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.05em;
-  padding: 6px 12px; border: 1.5px solid var(--border); border-radius: 5px;
-  background: transparent; color: var(--ink-muted); cursor: pointer;
-  transition: all 0.15s; margin-top: 12px;
-}
-.upload-reset:hover { border-color: var(--accent); color: var(--accent); }
 
 .slot-undo {
   display: block; margin-top: 5px;
@@ -271,18 +254,17 @@ tbody td { padding: 9px 18px; color: var(--ink); vertical-align: middle; }
   <div class="stat-card"><div class="stat-num" id="statOS">10</div><div class="stat-label">Obras Sociales</div></div>
 </div>
 
-<!-- Panel de actualización mensual -->
+<!-- Panel de actualización -->
 <div class="upload-panel">
   <div class="upload-panel-header" id="uploadToggle" onclick="toggleUpload()">
-    <span style="font-size:14px">📂</span>
-    <span class="upload-panel-title">En caso de necesitar actualizar datos</span>
-    <span class="upload-panel-badge">CSV</span>
+    <span style="font-size:12px;opacity:0.6">📂</span>
+    <span class="upload-panel-title">Actualizar datos</span>
     <span class="upload-chevron" id="uploadChevron">▼</span>
   </div>
   <div class="upload-panel-body" id="uploadBody">
     <div class="upload-grid" id="uploadGrid"></div>
     <div class="upload-hint">
-      <strong>¿Cómo actualizar?</strong> Hacé clic en el casillero de la obra social que se renovó y seleccioná el archivo (Excel o PDF) exportado desde Sharepoint.
+      Hacé clic en el casillero de la obra social y seleccioná el archivo Excel o CSV exportado desde Sharepoint.
     </div>
   </div>
 </div>
@@ -1831,7 +1813,7 @@ function buildUploadGrid() {
       <div class="upload-slot-name">${label}</div>
       <div class="upload-slot-status" id="status-${slotKey}">${isLoaded ? '✓ Actualizado' : '+ Cargar archivo'}</div>
       ${undoBtn}
-      <input type="file" accept=".csv,.txt,.pdf,.xlsx,.xls" onchange="handleFile(event,'${slotKey}')">`;
+      <input type="file" accept=".csv,.txt,.xlsx,.xls" onchange="handleFile(event,'${slotKey}')">`;
     grid.appendChild(slot);
   });
 }
@@ -1850,8 +1832,7 @@ function handleFile(event, slotKey) {
   const file = event.target.files[0];
   if (!file) return;
   const name = file.name.toLowerCase();
-  if (name.endsWith('.pdf')) handlePDF(file, slotKey);
-  else if (name.endsWith('.xlsx') || name.endsWith('.xls')) handleExcel(file, slotKey);
+  if (name.endsWith('.xlsx') || name.endsWith('.xls')) handleExcel(file, slotKey);
   else handleCSV(file, slotKey);
 }
 
@@ -1982,47 +1963,8 @@ function parseCSV(text, slotKey) {
   return { columns, rows };
 }
 
-async function handlePDF(file, slotKey) {
-  setSlotLoading(slotKey, '⏳ Leyendo PDF con IA...');
-  const base64 = await fileToBase64(file);
-  const isAlto = slotKey === 'OSDE_ALTO';
-  const prompt = isAlto
-    ? `Extraé todos los medicamentos de este PDF y devolvé ÚNICAMENTE un JSON sin texto adicional:\n{"columns":["Droga","Nombre Comercial","Auditoría Médica"],"rows":[["DROGA","NOMBRE","Sí|No|—"],...]}`
-    : `Extraé todos los medicamentos de este PDF y devolvé ÚNICAMENTE un JSON sin texto adicional:\n{"columns":["Droga","Nombre Comercial"],"rows":[["DROGA","NOMBRE"],...]}`;
-  try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514", max_tokens: 8000,
-        messages: [{ role: "user", content: [
-          { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
-          { type: "text", text: prompt }
-        ]}]
-      })
-    });
-    const data = await response.json();
-    const text = (data.content || []).map(b => b.text || '').join('').trim();
-    let parsed;
-    try { parsed = JSON.parse(text); }
-    catch { const m = text.match(/\{[\s\S]*\}/); if (m) parsed = JSON.parse(m[0]); else throw new Error('JSON inválido en respuesta.'); }
-    if (!parsed.rows || !parsed.rows.length) throw new Error('No se encontraron medicamentos en el PDF.');
-    applyOverride(slotKey, parsed, file.name.replace(/\.pdf$/i, ''));
-  } catch(err) {
-    setSlotLoading(slotKey, '');
-    buildUploadGrid();
-    alert('Error al procesar el PDF: ' + err.message);
-  }
-}
 
-function fileToBase64(file) {
-  return new Promise((res, rej) => {
-    const reader = new FileReader();
-    reader.onload = () => res(reader.result.split(',')[1]);
-    reader.onerror = () => rej(new Error('No se pudo leer el archivo.'));
-    reader.readAsDataURL(file);
-  });
-}
+
 
 function setSlotLoading(slotKey, msg) {
   const slot = document.getElementById('slot-' + slotKey);
