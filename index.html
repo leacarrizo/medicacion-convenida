@@ -222,7 +222,10 @@ tbody td { padding: 9px 18px; color: var(--ink); vertical-align: middle; }
   <div>
     <h1>Medicación <span>Convenida</span></h1>
   </div>
-
+  <div id="lastUpdateBadge" style="margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+    <span style="font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(255,255,255,0.5);">Última actualización</span>
+    <span id="lastUpdateDate" style="font-family:'DM Serif Display',serif; font-size:15px; color:white; font-style:italic;">17/03/2026</span>
+  </div>
 </header>
 
 <div class="filters-bar">
@@ -2094,6 +2097,11 @@ function downloadUpdatedDashboard() {
     /id="downloadBanner"[^>]*style="[^"]*"/,
     'id="downloadBanner" style="display:none"'
   );
+
+  // Hornear la fecha de actualización general en el archivo descargado
+  const now = new Date();
+  const fechaStr = now.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  html = html.replace('17/03/2026', fechaStr);
 
   // Usar base64 data URI en lugar de blob URL para compatibilidad con
   // entornos corporativos que bloquean createObjectURL (SharePoint, etc.)
