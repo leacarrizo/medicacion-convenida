@@ -253,7 +253,7 @@ tbody td { padding: 9px 18px; color: var(--ink); vertical-align: middle; }
   </div>
   <div id="lastUpdateBadge" style="margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
     <span style="font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(255,255,255,0.5);">Última actualización</span>
-    <span id="lastUpdateDate" style="font-family:'DM Serif Display',serif; font-size:15px; color:white; font-style:italic;">01/05/2026</span>
+    <span id="lastUpdateDate" style="font-family:'DM Serif Display',serif; font-size:15px; color:white; font-style:italic;">05/05/2026</span>
   </div>
 </header>
 
@@ -1940,12 +1940,26 @@ function render() {
           </div>`;
       }).join('');
 
+      // Calcular el periodo más reciente entre las sub-secciones
+      const periodoDisplay = (() => {
+        const periodos = src.subsections.map(s => s.periodo).filter(Boolean);
+        // Intentar parsear como "Mes AAAA" y devolver el más reciente
+        const meses = { 'Ene':1,'Feb':2,'Mar':3,'Abr':4,'May':5,'Jun':6,'Jul':7,'Ago':8,'Sep':9,'Oct':10,'Nov':11,'Dic':12 };
+        const parsed = periodos.map(p => {
+          const m = p.match(/([A-Za-záéíóúÁÉÍÓÚ]+)\s*(\d{4})/);
+          if (m) return { str: p, val: parseInt(m[2]) * 100 + (meses[m[1]] || 0) };
+          return { str: p, val: 0 };
+        });
+        parsed.sort((a, b) => b.val - a.val);
+        return parsed[0]?.str || src.periodo;
+      })();
+
       sec.innerHTML = `
         <div class="os-section-header ${isOpen?'':'collapsed'}" onclick="toggleSection('${key}',this)">
           <div class="os-dot" style="background:${c.dot}"></div>
           ${OS_LOGOS[key] ? `<img src="${OS_LOGOS[key]}" class="os-header-logo" alt="">` : ''}
           <h2 style="color:${c.dot}">${src.label}</h2>
-          <span class="os-periodo">${src.periodo}</span>
+          <span class="os-periodo">${periodoDisplay}</span>
           <span class="os-count">${totalSubRows} items</span>
           <span class="collapse-icon">▼</span>
         </div>
