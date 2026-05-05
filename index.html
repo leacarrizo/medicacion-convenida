@@ -2116,7 +2116,7 @@ function handleExcel(file, slotKey) {
       // Usar la primera hoja
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       // Convertir a array de arrays
-      const rows2d = XLSX.utils.sheet_to_array(sheet, { defval: '' });
+      const rows2d = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
       if (rows2d.length < 2) throw new Error('La hoja Excel tiene menos de 2 filas.');
 
       // Normalizar encabezados (primera fila no vacía)
