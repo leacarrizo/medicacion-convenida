@@ -27,6 +27,17 @@
   --os-9: #00334a; --os-9l: #e0eef5;
   --os-10: #1a0048; --os-10l: #ede0f7;
 }
+
+[data-theme="dark"] {
+  --bg: #141210;
+  --surface: #1e1b18;
+  --surface2: #262320;
+  --ink: #e8e0d8;
+  --ink-muted: #8a8480;
+  --accent: #e05a2b;
+  --accent-light: #2a1a14;
+  --border: #2e2b28;
+}
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
 
@@ -38,6 +49,37 @@ header {
 header h1 { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--bg); line-height: 1; }
 header h1 span { color: var(--accent); font-style: italic; }
 .header-meta { font-family: 'DM Mono', monospace; font-size: 11px; color: #888; letter-spacing: 0.05em; padding-bottom: 2px; }
+
+/* Toggle modo oscuro */
+.theme-toggle {
+  display: flex; align-items: center; gap: 8px;
+  margin-left: auto; cursor: pointer; user-select: none;
+  padding-bottom: 2px;
+}
+.theme-toggle-label {
+  font-family: 'DM Mono', monospace; font-size: 9px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: rgba(255,255,255,0.35); transition: color 0.2s;
+}
+.theme-toggle:hover .theme-toggle-label { color: rgba(255,255,255,0.6); }
+.theme-toggle-track {
+  width: 34px; height: 18px; border-radius: 20px;
+  background: rgba(255,255,255,0.15); position: relative;
+  transition: background 0.25s; flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+[data-theme="dark"] .theme-toggle-track { background: var(--accent); border-color: var(--accent); }
+.theme-toggle-thumb {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: rgba(255,255,255,0.5); position: absolute;
+  top: 2px; left: 2px; transition: transform 0.25s, background 0.25s;
+}
+[data-theme="dark"] .theme-toggle-thumb { transform: translateX(16px); background: white; }
+.theme-toggle-icon { font-size: 13px; transition: opacity 0.2s; }
+.icon-sun { opacity: 0.5; }
+.icon-moon { opacity: 0.35; }
+[data-theme="dark"] .icon-sun { opacity: 0.35; }
+[data-theme="dark"] .icon-moon { opacity: 0.7; }
 
 .filters-bar {
   background: var(--surface); border-bottom: 1px solid var(--border);
@@ -111,8 +153,17 @@ header h1 span { color: var(--accent); font-style: italic; }
 .os-count { margin-left: auto; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink-muted); background: var(--surface2); padding: 3px 10px; border-radius: 20px; margin-right: 8px; }
 .collapse-icon { font-size: 12px; color: var(--ink-muted); transition: transform 0.2s; }
 .collapsed .collapse-icon { transform: rotate(-90deg); }
-.os-table-wrap { overflow: hidden; transition: max-height 0.3s ease; }
-.os-table-wrap.hidden { display: none; }
+.os-table-wrap {
+  overflow: hidden;
+  max-height: 9999px;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+  opacity: 1;
+}
+.os-table-wrap.hidden {
+  max-height: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+}
 
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 thead tr { background: var(--surface2); }
@@ -122,7 +173,7 @@ tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: var(--bg); }
 tbody td { padding: 9px 18px; color: var(--ink); vertical-align: middle; }
 .drug-name { font-weight: 600; }
-.brand-tag { display: inline-block; background: var(--ink); color: #f4f1eb; font-family: 'DM Mono', monospace; font-size: 10px; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.02em; }
+.brand-tag { display: inline-block; background: var(--ink); color: var(--bg); font-family: 'DM Mono', monospace; font-size: 10px; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.02em; }
 .badge { display: inline-block; font-family: 'DM Mono', monospace; font-size: 10px; padding: 2px 8px; border-radius: 4px; }
 .badge-si { background: #d4edda; color: #1a6b35; }
 .badge-no { background: #f5e8e3; color: #c4441c; }
@@ -251,9 +302,16 @@ tbody td { padding: 9px 18px; color: var(--ink); vertical-align: middle; }
   <div>
     <h1>Medicación <span>Convenida</span></h1>
   </div>
-  <div id="lastUpdateBadge" style="margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+  <div class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
+    <span class="theme-toggle-icon icon-sun">☀️</span>
+    <div class="theme-toggle-track">
+      <div class="theme-toggle-thumb"></div>
+    </div>
+    <span class="theme-toggle-icon icon-moon">🌙</span>
+  </div>
+  <div id="lastUpdateBadge" style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
     <span style="font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(255,255,255,0.5);">Última actualización</span>
-    <span id="lastUpdateDate" style="font-family:'DM Serif Display',serif; font-size:15px; color:white; font-style:italic;">18/05/2026</span>
+    <span id="lastUpdateDate" style="font-family:'DM Serif Display',serif; font-size:15px; color:white; font-style:italic;">28/05/2026</span>
   </div>
 </header>
 
@@ -2580,6 +2638,30 @@ function downloadUpdatedDashboard() {
   a.click();
   document.body.removeChild(a);
 }
+
+// ── MODO OSCURO ──────────────────────────────────────────────
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const newTheme = isDark ? 'light' : 'dark';
+  applyTheme(newTheme);
+  try { localStorage.setItem('mc-theme', newTheme); } catch(e) {}
+}
+
+function applyTheme(theme) {
+  if (theme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+}
+
+// Cargar preferencia guardada
+(function() {
+  try {
+    const saved = localStorage.getItem('mc-theme');
+    if (saved) applyTheme(saved);
+  } catch(e) {}
+})();
 
 render();
 initLogos();
