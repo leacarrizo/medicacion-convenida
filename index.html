@@ -314,7 +314,7 @@ tbody td { padding: 9px 18px; color: var(--ink); vertical-align: middle; }
   </div>
   <div id="lastUpdateBadge" style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
     <span style="font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(255,255,255,0.5);">Última actualización</span>
-    <span id="lastUpdateDate" style="font-family:'DM Serif Display',serif; font-size:15px; color:white; font-style:italic;">01/10/2026</span>
+    <span id="lastUpdateDate" style="font-family:'DM Serif Display',serif; font-size:15px; color:white; font-style:italic;">02/10/2026</span>
   </div>
 </header>
 
@@ -794,6 +794,7 @@ const OMINT_ROWS = [
   ro("10015026","10015027","ADALIMUMAB","AMGEVITA 40MG/0.8ML AUTOINY X 2",69.56),
   ro("10015013","10015014","ADALIMUMAB","HUMIRA AC LAP AUTOINY 0.4ML X 2",77.12),
   ro("10015015","10015016","ADALIMUMAB","HUMIRA AC LAP AUTOINY 0.8ML X 1",74.97),
+  ro("60412302","—","ALBUMINA HUMANA","INFINITY PHARMA",20.00),
   ro("10750002","10750003","ALFILIBERCEPT","EYLIA 40 mg/ml",35.00),
   ro("10559901","10559902","APREPITANT","EMEND TRIPACK CAPS.X 1+CAPS.X2",46.19),
   ro("30700147","30700148","ATEZOLIZUMAB","TECENTRIQ 1200mg vial x 1 x 20 ml",38.88),
@@ -1577,7 +1578,6 @@ const OSDE_ONCO_ROWS = [
       ["BICALUTAMIDA", "BITAKEBIR", "50 MG COMP.X 28"],
       ["BICALUTAMIDA", "BICALUTAMIDA TECHSPHERE", "50 MG COMP.X 30"],
       ["BICALUTAMIDA", "BICALUTAMIDA IMA", "50 MG COMP.X 28"],
-      ["BICALUTAMIDA", "DIMALAN", "50 MG COMP.X 28"],
       ["BICALUTAMIDA", "BICALUTAMIDA KEMEX", "50 MG COMP.REC.X 28"],
       ["GOSERELIN,ACETATO", "ZOLADEX", "3.6 MG DEPOT X 1"],
       ["HIDROXIUREA", "HIDROXIUREA LKM 500", "500 MG CÁPS.X 100"],
@@ -1645,7 +1645,6 @@ const OSDE_ONCO_ROWS = [
       ["CAPECITABINA", "CAPECINOVA", "500 MG COMP.REC.X 120"],
       ["CAPECITABINA", "IMACAP", "500 MG COMP.REC.X 120"],
       ["CAPECITABINA", "BODABINA", "500 MG COMP.REC.X 120"],
-      ["CAPECITABINA", "CAPECITABINA GOBBI", "500 MG COMP.REC.X 120"],
       ["CAPECITABINA", "CAPEXAN", "500 MG COMP.X 120"],
       ["GOSERELIN,ACETATO", "ZOLADEX LA", "10.8 MG DEPOT X 1"],
       ["MEPREDNISONA", "CORTIPYREN B", "40 MG COMP.X 20"],
@@ -1713,7 +1712,6 @@ const OSDE_ONCO_ROWS = [
       ["DACARBAZINA", "DACARBAZINA VARIFARMA", "200 MG INY.F.A.X 1"],
       ["DAUNORUBICINA (DAUNOMICINA)", "MAXIDAUNO", "20 MG F.A.X 1"],
       ["DOCETAXEL", "DOCETAXEL DELTA FARMA", "20 MG F.A.X 1"],
-      ["DOCETAXEL", "TEXOT", "20 MG F.A.X 1+DILUY.X 1"],
       ["DOCETAXEL", "PLUSTAXANO ANHIDRO 20", "20 MG F.A.X 1+DISOLV.X 1"],
       ["DOCETAXEL", "DOCETAXEL VARIFARMA", "20 MG F.A.X 1 X 0.5 ML"],
       ["DOCETAXEL", "DOCETAXEL MICROSULES", "20 MG F.A.X 1 X 0.5 ML"],
@@ -1728,7 +1726,6 @@ const OSDE_ONCO_ROWS = [
       ["DOCETAXEL", "IMAXEL", "20 MG/4 ML F.A.X 1"],
       ["DOCETAXEL", "DOLECTRAN NF", "80 MG F.A.X 1+DISOLV."],
       ["DOCETAXEL", "DOCETAXEL DELTA FARMA", "80 MG F.A.X 1"],
-      ["DOCETAXEL", "TEXOT", "80 MG F.A.X 1+DILUY.X 1"],
       ["DOCETAXEL", "PLUSTAXANO ANHIDRO 80", "80 MG F.A.X 1+DISOLV.X 1"],
       ["DOCETAXEL", "DOCETAXEL VARIFARMA", "80 MG F.A.X 1 X 2.0 ML"],
       ["DOCETAXEL", "DOCETAXEL MICROSULES", "80 MG F.A.X 1 X 2 ML"],
@@ -3253,7 +3250,7 @@ const DATA = {
       {
         label: "Anexo Oncológico",
         subkey: "OSDE_ONCO",
-        periodo: "Jun 2026",
+        periodo: "Oct 2026",
         columns: ["Droga", "Nombre Comercial", "Presentación"],
         rows: OSDE_ONCO_ROWS,
       },
@@ -3300,7 +3297,7 @@ const DATA = {
   },
   OMINT: {
     label: "OMINT",
-    periodo: "Abr 2025",
+    periodo: "Nov 2025",
     columns: ["Droga", "Nombre Comercial"],
     rows: OMINT_ROWS,
   },
@@ -3566,8 +3563,8 @@ const origPeriodosHistory = {};
 const origPeriodos = {
   MEDICUS:'Jul 2026', SMG:'May 2026', APSOT:'Abr 2025',
   ASE_MEDIFE:'Jul 2025', COLEGIO_ESC:'Jul 2025', COLEGIO_ESC_CABA:'Jul 2026', INSSSEP_GENERAL:'Ago 2026', INSSSEP_TRASPLANTE:'Oct 2026', APOS:'Sep 2026', REDBRIDGE:'Oct 2026', IOSEP:'Ago 2026',
-  OMINT:'Abr 2025', PODER_JUD:'Jun 2026', SEMPRE:'Jul 2026', FEMEDICA:'Jul 2026',
-  OSDE_ALTO:'Feb 2026', OSDE_ONCO:'Jun 2026',
+  OMINT:'Nov 2025', PODER_JUD:'Jun 2026', SEMPRE:'Jul 2026', FEMEDICA:'Jul 2026',
+  OSDE_ALTO:'Feb 2026', OSDE_ONCO:'Oct 2026',
 };
 
 function getSubRows(key, subkey, defaultRows) {
